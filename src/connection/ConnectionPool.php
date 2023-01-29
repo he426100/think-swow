@@ -9,10 +9,10 @@ use think\swow\connection\Connectors\ConnectorInterface;
 
 class ConnectionPool implements ConnectionPoolInterface
 {
-    /**@var int The timeout of the operation channel */
-    const CHANNEL_TIMEOUT = 1;
+    /**@var float The timeout of the operation channel */
+    const CHANNEL_TIMEOUT = 0.001;
 
-    /**@var int The minimum interval to check the idle connections */
+    /**@var float The minimum interval to check the idle connections */
     const MIN_CHECK_IDLE_INTERVAL = 10;
 
     /**@var string The key about the last active time of connection */
@@ -42,14 +42,14 @@ class ConnectionPool implements ConnectionPoolInterface
     /**@var int The maximum number of active connections */
     protected $maxActive = 1;
 
-    /**@var int The maximum waiting time for connection, when reached, an exception will be thrown */
-    protected $maxWaitTime = 5000;
+    /**@var float The maximum waiting time for connection, when reached, an exception will be thrown */
+    protected $maxWaitTime = 5;
 
-    /**@var int The maximum idle time for the connection, when reached, the connection will be removed from pool, and keep the least $minActive connections in the pool */
-    protected $maxIdleTime = 5000;
+    /**@var float The maximum idle time for the connection, when reached, the connection will be removed from pool, and keep the least $minActive connections in the pool */
+    protected $maxIdleTime = 5;
 
-    /**@var int The interval to check idle connection */
-    protected $idleCheckInterval = 5000;
+    /**@var float The interval to check idle connection */
+    protected $idleCheckInterval = 5;
 
     /**@var int The timer id of balancer */
     protected $balancerTimerId;
@@ -71,9 +71,9 @@ class ConnectionPool implements ConnectionPoolInterface
         $this->closed = false;
         $this->minActive = $poolConfig['minActive'] ?? 20;
         $this->maxActive = $poolConfig['maxActive'] ?? 100;
-        $this->maxWaitTime = $poolConfig['maxWaitTime'] ?? 5000;
-        $this->maxIdleTime = $poolConfig['maxIdleTime'] ?? 30000;
-        $poolConfig['idleCheckInterval'] = $poolConfig['idleCheckInterval'] ?? 15000;
+        $this->maxWaitTime = $poolConfig['maxWaitTime'] ?? 5;
+        $this->maxIdleTime = $poolConfig['maxIdleTime'] ?? 30;
+        $poolConfig['idleCheckInterval'] = $poolConfig['idleCheckInterval'] ?? 15;
         $this->idleCheckInterval = $poolConfig['idleCheckInterval'] >= static::MIN_CHECK_IDLE_INTERVAL ? $poolConfig['idleCheckInterval'] : static::MIN_CHECK_IDLE_INTERVAL;
         $this->connectionConfig = $connectionConfig;
         $this->connector = $connector;
@@ -95,7 +95,7 @@ class ConnectionPool implements ConnectionPoolInterface
             for ($i = 0; $i < $this->minActive; $i++) {
                 $connection = $this->createConnection();
                 try {
-                    $this->pool->push($connection, static::CHANNEL_TIMEOUT);
+                    $this->pool->push($connection, (int)(static::CHANNEL_TIMEOUT * 1000));
                 } catch (\Throwable) {
                     $this->removeConnection($connection);
                 }
@@ -123,7 +123,7 @@ class ConnectionPool implements ConnectionPoolInterface
         }
 
         try {
-            $connection = $this->pool->pop($this->maxWaitTime);
+            $connection = $this->pool->pop((int)($this->maxWaitTime * 1000));
             if ($this->connector->isConnected($connection)) {
                 // Reset the connection for the connected connection
                 $this->connector->reset($connection, $this->connectionConfig);
@@ -166,7 +166,7 @@ class ConnectionPool implements ConnectionPoolInterface
         }
         $connection->{static::KEY_LAST_ACTIVE_TIME} = time();
         try {
-            $this->pool->push($connection, static::CHANNEL_TIMEOUT);
+            $this->pool->push($connection, (int)(static::CHANNEL_TIMEOUT * 1000));
             return true;
         } catch (\Throwable) {
             $this->removeConnection($connection);
@@ -212,7 +212,7 @@ class ConnectionPool implements ConnectionPoolInterface
                     break;
                 }
                 try {
-                    $connection = $this->pool->pop(static::CHANNEL_TIMEOUT);
+                    $connection = $this->pool->pop((int)(static::CHANNEL_TIMEOUT * 1000));
                     $this->connector->disconnect($connection);
                 } catch (\Throwable) {}
             }
@@ -243,7 +243,7 @@ class ConnectionPool implements ConnectionPoolInterface
                 }
                 
                 try {
-                    $connection = $this->pool->pop(static::CHANNEL_TIMEOUT);
+                    $connection = $this->pool->pop((int)(static::CHANNEL_TIMEOUT * 1000));
                     $lastActiveTime = $connection->{static::KEY_LAST_ACTIVE_TIME} ?? 0;
                     if ($now - $lastActiveTime < $this->maxIdleTime) {
                         $validConnections[] = $connection;
@@ -256,7 +256,7 @@ class ConnectionPool implements ConnectionPoolInterface
 
             foreach ($validConnections as $validConnection) {
                 try {
-                    $this->pool->push($validConnection, static::CHANNEL_TIMEOUT);
+                    $this->pool->push($validConnection, (int)(static::CHANNEL_TIMEOUT * 1000));
                 } catch (\Throwable) {
                     $this->removeConnection($validConnection);
                 }
