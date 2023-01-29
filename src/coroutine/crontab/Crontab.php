@@ -2,7 +2,7 @@
 // 代码来自hyperf
 namespace think\swow\coroutine\crontab;
 
-use Swow\Coroutine;
+use think\swow\Coroutine;
 use think\swow\Channel;
 
 class Crontab
@@ -17,7 +17,7 @@ class Crontab
 
     public function run()
     {
-        Coroutine::run(function () {
+        Coroutine::create(function () {
             $parser = new Parser();
             while (1) {
                 $current = microdate('s.v');
@@ -29,7 +29,7 @@ class Crontab
                     list($rule, $func) = $crontab;
                     $times = $parser->parse($rule);
                     foreach ($times as $time) {
-                        Coroutine::run(static function () use ($time, $func) {
+                        Coroutine::create(static function () use ($time, $func) {
                             $wait = $time - time();
                             if ($wait <= 0) {
                                 $wait = 1;
