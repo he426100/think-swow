@@ -2,44 +2,10 @@
 
 修改自（[top-think/think-swoole](https://github.com/top-think/think-swoole)），仅用作个人学习。已实现command中运行，下一步是测试http。
 
-### 在tp6中测试扩展  
-
+### 并发操作数据库  
 ```
-# command
-<?php
-
-declare(strict_types=1);
-
-namespace app\command;
-
-use app\model\Test as TestModel;
-use think\facade\Db;
-use think\console\Command;
-use think\console\Input;
-use think\console\input\Argument;
-use think\console\input\Option;
-use think\console\Output;
-use think\swow\command\Swow;
-use think\swow\Channel;
-use think\swow\Coroutine;
-use Swow\Sync\WaitGroup;
-
 class Test extends Swow
 {
-    protected function configure()
-    {
-        // 指令配置
-        $this->setName('swow:test')
-            ->addOption(
-                'env',
-                'E',
-                Option::VALUE_REQUIRED,
-                'Environment name',
-                ''
-            )
-            ->setDescription('the swow test command');
-    }
-
     protected function runInSwow(Input $input, Output $output)
     {
         TestModel::find(1)->save(['val' => 0]);
@@ -67,6 +33,36 @@ class Test extends Swow
         $wg->wait();
         echo TestModel::find(1)['val'], PHP_EOL;
         echo 'ok', PHP_EOL;
+    }
+}
+```
+
+### 无阻塞的毫秒级定时器  
+```
+class Timer extends Swow
+{
+    protected function runInSwow(Input $input, Output $output)
+    {
+        SwowTimer::repeat(5000, function () {
+            echo '[' . date('Y-m-d H:i:s') . ']' . Coroutine::id() . ' start', PHP_EOL;
+            sleep(10);
+            echo '[' . date('Y-m-d H:i:s') . ']' . Coroutine::id() . ' end', PHP_EOL;
+        });
+    }
+}
+```
+
+### 无阻塞的秒级crontab  
+```
+class Crontab extends Swow
+{
+    protected function runInSwow(Input $input, Output $output)
+    {
+        (new SwowCrontab)->add('*/5 * * * * *', function () {
+            echo '[' . date('Y-m-d H:i:s') . ']' . Coroutine::id() . ' start', PHP_EOL;
+            sleep(10);
+            echo '[' . date('Y-m-d H:i:s') . ']' . Coroutine::id() . ' end', PHP_EOL;
+        })->run();
     }
 }
 ```
