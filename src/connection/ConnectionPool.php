@@ -2,7 +2,7 @@
 // 代码来自open-smf/connection-pool
 namespace think\swow\connection;
 
-use Swow\Channel;
+use think\swow\Channel;
 use think\swow\Coroutine;
 use think\swow\coroutine\Timer;
 use think\swow\connection\Connectors\ConnectorInterface;
@@ -94,9 +94,8 @@ class ConnectionPool implements ConnectionPoolInterface
         Coroutine::create(function () {
             for ($i = 0; $i < $this->minActive; $i++) {
                 $connection = $this->createConnection();
-                try {
-                    $this->pool->push($connection, (int)(static::CHANNEL_TIMEOUT * 1000));
-                } catch (\Throwable) {
+                $ret = $this->pool->push($connection, static::CHANNEL_TIMEOUT);
+                if ($ret === false) {
                     $this->removeConnection($connection);
                 }
             }
@@ -122,18 +121,8 @@ class ConnectionPool implements ConnectionPoolInterface
             }
         }
 
-        try {
-            $connection = $this->pool->pop((int)($this->maxWaitTime * 1000));
-            if ($this->connector->isConnected($connection)) {
-                // Reset the connection for the connected connection
-                $this->connector->reset($connection, $this->connectionConfig);
-            } else {
-                // Remove the disconnected connection, then create a new connection
-                $this->removeConnection($connection);
-                $connection = $this->createConnection();
-            }
-            return $connection;
-        } catch (\Throwable) {
+        $connection = $this->pool->pop($this->maxWaitTime);
+        if ($connection === false) {
             $exception = new BorrowConnectionTimeoutException(sprintf(
                 'Borrow the connection timeout in %.2f(s), connections in pool: %d, all connections: %d',
                 $this->maxWaitTime,
@@ -143,6 +132,15 @@ class ConnectionPool implements ConnectionPoolInterface
             $exception->setTimeout($this->maxWaitTime);
             throw $exception;
         }
+        if ($this->connector->isConnected($connection)) {
+            // Reset the connection for the connected connection
+            $this->connector->reset($connection, $this->connectionConfig);
+        } else {
+            // Remove the disconnected connection, then create a new connection
+            $this->removeConnection($connection);
+            $connection = $this->createConnection();
+        }
+        return $connection;
     }
 
     /**
@@ -165,13 +163,11 @@ class ConnectionPool implements ConnectionPoolInterface
             return false;
         }
         $connection->{static::KEY_LAST_ACTIVE_TIME} = time();
-        try {
-            $this->pool->push($connection, (int)(static::CHANNEL_TIMEOUT * 1000));
-            return true;
-        } catch (\Throwable) {
+        $ret = $this->pool->push($connection, static::CHANNEL_TIMEOUT);
+        if ($ret === false) {
             $this->removeConnection($connection);
         }
-        return false;
+        return true;
     }
 
     /**
@@ -211,10 +207,10 @@ class ConnectionPool implements ConnectionPoolInterface
                 if ($this->pool->isEmpty()) {
                     break;
                 }
-                try {
-                    $connection = $this->pool->pop((int)(static::CHANNEL_TIMEOUT * 1000));
+                $connection = $this->pool->pop(static::CHANNEL_TIMEOUT);
+                if ($connection !== false) {
                     $this->connector->disconnect($connection);
-                } catch (\Throwable) {}
+                }
             }
             $this->pool->close();
         });
@@ -241,23 +237,21 @@ class ConnectionPool implements ConnectionPoolInterface
                 if ($this->pool->isEmpty()) {
                     break;
                 }
-                
-                try {
-                    $connection = $this->pool->pop((int)(static::CHANNEL_TIMEOUT * 1000));
-                    $lastActiveTime = $connection->{static::KEY_LAST_ACTIVE_TIME} ?? 0;
-                    if ($now - $lastActiveTime < $this->maxIdleTime) {
-                        $validConnections[] = $connection;
-                    } else {
-                        $this->removeConnection($connection);
-                    }
-                } catch (\Throwable) {
+                $connection = $this->pool->pop(static::CHANNEL_TIMEOUT);
+                if ($connection === false) {
+                    continue;
+                }
+                $lastActiveTime = $connection->{static::KEY_LAST_ACTIVE_TIME} ?? 0;
+                if ($now - $lastActiveTime < $this->maxIdleTime) {
+                    $validConnections[] = $connection;
+                } else {
+                    $this->removeConnection($connection);
                 }
             }
 
             foreach ($validConnections as $validConnection) {
-                try {
-                    $this->pool->push($validConnection, (int)(static::CHANNEL_TIMEOUT * 1000));
-                } catch (\Throwable) {
+                $ret = $this->pool->push($validConnection, static::CHANNEL_TIMEOUT);
+                if ($ret === false) {
                     $this->removeConnection($validConnection);
                 }
             }

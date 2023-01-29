@@ -3,8 +3,8 @@
 namespace think\swow\coroutine;
 
 use Closure;
-use Swow\Channel;
 use Swow\Errno;
+use think\swow\Channel;
 use think\swow\Coroutine;
 use think\swow\exception\ExceptionThrower;
 use think\swow\exception\WaitTimeoutException;

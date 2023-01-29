@@ -12,6 +12,19 @@ use think\console\Output;
 
 abstract class Swow extends Command
 {
+    protected CommandManager $manager;
+
+    /**
+     * 构造方法
+     * @throws LogicException
+     * @api
+     */
+    public function __construct(CommandManager $manager)
+    {
+        $this->manager = $manager;
+        parent::__construct();
+    }
+
     protected function configure()
     {
         $this->setName('swow command')
@@ -27,12 +40,11 @@ abstract class Swow extends Command
 
     protected function execute(Input $input, Output $output)
     {
-        $manager = app(CommandManager::class);
-        $manager->addWorker(function () use ($input, $output) {
+        $this->manager->addWorker(function () use ($input, $output) {
             $this->runInSwow($input, $output);
         }, $this->getName());
         $envName = $this->input->getOption('env');
-        $manager->start($envName);
+        $this->manager->start($envName);
     }
 
     protected abstract function runInSwow(Input $input, Output $output);
