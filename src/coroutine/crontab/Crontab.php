@@ -20,8 +20,8 @@ class Crontab
         Coroutine::create(function () {
             $parser = new Parser();
             while (1) {
-                $current = microdate('s.v');
-                $sleep = 60 - $current;
+                $current = (int)(microdate('s.v') * 1000);
+                $sleep = (60_000 - $current) / 1000;
                 $channel = new Channel();
                 $channel->pop($sleep ?: 0.001);
  
