@@ -1,0 +1,63 @@
+{
+    "name": "topthink/think-swow",
+    "description": "Swow extend for thinkphp",
+    "license": "Apache-2.0",
+    "authors": [
+        {
+            "name": "liu21st",
+            "email": "liu21st@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.4",
+        "ext-json": "*",
+        "nette/php-generator": "^3.2",
+        "stechstudio/backoff": "^1.2",
+        "symfony/finder": "^4.3.2|^5.1",
+        "topthink/framework": "^6.0"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.13",
+        "phpstan/phpstan": "^1.9",
+        "phpunit/phpunit": "^9.5",
+        "swow/swow": "^1.1",
+        "symfony/var-dumper": "^4.3|^5.1",
+        "topthink/think-tracing": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "think\\swow\\": "src"
+        },
+        "files": [
+            "src/helpers.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "think\\tests\\swow\\": "tests/"
+        }
+    },
+    "extra": {
+        "think": {
+            "services": [
+                "think\\swow\\Service"
+            ],
+            "config": {
+                "swow": "src/config/swow.php"
+            }
+        }
+    },
+    "config": {
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "platform-check": false,
+        "platform": {
+            "ext-fileinfo": "1.0.4"
+        }
+    },
+    "scripts": {
+        "analyse": "@php vendor/bin/phpstan analyse --memory-limit 512M -l 0 -c phpstan.neon ./app ./config",
+        "cs-fix": "@php vendor/bin/php-cs-fixer fix $1",
+        "test": "@php vendor/bin/phpunit -c phpunit.xml --colors=always"
+    }
+}
