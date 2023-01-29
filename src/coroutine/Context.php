@@ -1,5 +1,5 @@
 <?php
-
+// 代码来自hyperf
 namespace think\swow\coroutine;
 
 use ArrayObject;
