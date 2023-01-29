@@ -32,7 +32,7 @@ class Crontab
                         Coroutine::create(static function () use ($time, $func) {
                             $wait = $time - time();
                             if ($wait <= 0) {
-                                $wait = 1;
+                                $wait = 0.001;
                             }
                             $channel = new Channel();
                             $channel->pop((float)$wait);
