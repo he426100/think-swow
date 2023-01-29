@@ -3,13 +3,14 @@
 namespace think\swow\connection;
 
 use Swow\Channel;
+use think\swow\coroutine\Timer;
 use think\swow\Coroutine;
 use think\swow\connection\Connectors\ConnectorInterface;
 
 class ConnectionPool implements ConnectionPoolInterface
 {
     /**@var float The timeout of the operation channel */
-    const CHANNEL_TIMEOUT = 0.001;
+    const CHANNEL_TIMEOUT = 1;
 
     /**@var float The minimum interval to check the idle connections */
     const MIN_CHECK_IDLE_INTERVAL = 10;
@@ -200,15 +201,15 @@ class ConnectionPool implements ConnectionPoolInterface
             return false;
         }
         $this->closed = true;
-        swow_timer_clear($this->balancerTimerId);
+        Timer::deleteTimer($this->balancerTimerId);
         Coroutine::create(function () {
             while (true) {
                 if ($this->pool->isEmpty()) {
                     break;
                 }
                 try {
+                    $connection = $this->pool->pop(static::CHANNEL_TIMEOUT);
                     $this->connector->disconnect($connection);
-                    $this->pool->pop(static::CHANNEL_TIMEOUT);
                 } catch (\Throwable) {}
             }
             $this->pool->close();
@@ -223,7 +224,7 @@ class ConnectionPool implements ConnectionPoolInterface
 
     protected function startBalanceTimer(float $interval)
     {
-        return swow_timer_tick(round($interval) * 1000, function () {
+        return Timer::repeat(round($interval) * 1000, function () {
             $now = time();
             $validConnections = [];
             while (true) {

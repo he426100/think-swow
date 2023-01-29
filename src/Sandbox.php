@@ -129,11 +129,11 @@ class Sandbox
     protected function getSnapshotId($init = false)
     {
         if ($init) {
-            Coroutine::getContext()->offsetSet('#root', true);
+            Coroutine::getCurrent()->getContext()->offsetSet('#root', true);
             return Coroutine::id();
         } else {
             $cid = Coroutine::id();
-            while (!Coroutine::getContext($cid)->offsetExists('#root')) {
+            while (!Coroutine::getCurrent()->getContext($cid)->offsetExists('#root')) {
                 $cid = Coroutine::pid($cid);
                 if ($cid < 1) {
                     break;

@@ -2,7 +2,7 @@
 
 namespace think\swow\pool;
 
-use Smf\ConnectionPool\Connectors\ConnectorInterface;
+use think\swow\connection\Connectors\ConnectorInterface;
 
 class Connector implements ConnectorInterface
 {

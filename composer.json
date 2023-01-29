@@ -56,7 +56,7 @@
         }
     },
     "scripts": {
-        "analyse": "@php vendor/bin/phpstan analyse --memory-limit 512M -l 0 -c phpstan.neon ./app ./config",
+        "analyse": "@php vendor/bin/phpstan analyse --memory-limit 512M -l 0 -c phpstan.neon ./src",
         "cs-fix": "@php vendor/bin/php-cs-fixer fix $1",
         "test": "@php vendor/bin/phpunit -c phpunit.xml --colors=always"
     }

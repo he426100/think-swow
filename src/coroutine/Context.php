@@ -15,7 +15,7 @@ class Context
      */
     public static function get($cid = 0)
     {
-        return Coroutine::getContext($cid);
+        return Coroutine::getCurrent()->getContext($cid);
     }
 
     public static function getDataObject()

@@ -28,62 +28,62 @@ use function substr;
  */
 trait InteractsWithHttp
 {
-    // use ModifyProperty;
+    use ModifyProperty;
 
-    // public function createHttpServer()
-    // {
-    //     $this->preloadHttp();
+    public function createHttpServer()
+    {
+        // $this->preloadHttp();
 
-    //     $host    = $this->getConfig('http.host');
-    //     $port    = $this->getConfig('http.port');
-    //     $options = $this->getConfig('http.options', []);
+        // $host    = $this->getConfig('http.host');
+        // $port    = $this->getConfig('http.port');
+        // $options = $this->getConfig('http.options', []);
 
-    //     $server = new Server();
-    //     $server->bind($host, $port, Socket::BIND_FLAG_REUSEPORT);
+        // $server = new Server();
+        // $server->bind($host, $port, Socket::BIND_FLAG_REUSEPORT);
 
-    //     $server->handle(function (ServerRequest $request, ServerConnection $connection) {
-    //         $this->onRequest($request, $connection);
-    //     });
-    // }
+        // $server->handle(function (ServerRequest $request, ServerConnection $connection) {
+        //     $this->onRequest($request, $connection);
+        // });
+    }
 
-    // protected function preloadHttp()
-    // {
-    //     $http = $this->app->http;
-    //     $this->app->invokeMethod([$http, 'loadMiddleware'], [], true);
+    protected function preloadHttp()
+    {
+        // $http = $this->app->http;
+        // $this->app->invokeMethod([$http, 'loadMiddleware'], [], true);
 
-    //     if ($this->app->config->get('app.with_route', true)) {
-    //         $this->app->invokeMethod([$http, 'loadRoutes'], [], true);
-    //         $route = clone $this->app->route;
-    //         $this->modifyProperty($route, null);
-    //         unset($this->app->route);
+        // if ($this->app->config->get('app.with_route', true)) {
+        //     $this->app->invokeMethod([$http, 'loadRoutes'], [], true);
+        //     $route = clone $this->app->route;
+        //     $this->modifyProperty($route, null);
+        //     unset($this->app->route);
 
-    //         $this->app->resolving(SwowHttp::class, function ($http, App $app) use ($route) {
-    //             $newRoute = clone $route;
-    //             $this->modifyProperty($newRoute, $app);
-    //             $app->instance('route', $newRoute);
-    //         });
-    //     }
+        //     $this->app->resolving(SwowHttp::class, function ($http, App $app) use ($route) {
+        //         $newRoute = clone $route;
+        //         $this->modifyProperty($newRoute, $app);
+        //         $app->instance('route', $newRoute);
+        //     });
+        // }
 
-    //     $middleware = clone $this->app->middleware;
-    //     $this->modifyProperty($middleware, null);
-    //     unset($this->app->middleware);
+        // $middleware = clone $this->app->middleware;
+        // $this->modifyProperty($middleware, null);
+        // unset($this->app->middleware);
 
-    //     $this->app->resolving(SwowHttp::class, function ($http, App $app) use ($middleware) {
-    //         $newMiddleware = clone $middleware;
-    //         $this->modifyProperty($newMiddleware, $app);
-    //         $app->instance('middleware', $newMiddleware);
-    //     });
+        // $this->app->resolving(SwowHttp::class, function ($http, App $app) use ($middleware) {
+        //     $newMiddleware = clone $middleware;
+        //     $this->modifyProperty($newMiddleware, $app);
+        //     $app->instance('middleware', $newMiddleware);
+        // });
 
-    //     unset($this->app->http);
-    //     $this->app->bind(Http::class, SwowHttp::class);
-    // }
+        // unset($this->app->http);
+        // $this->app->bind(Http::class, SwowHttp::class);
+    }
 
-    // protected function prepareHttp()
-    // {
-    //     if ($this->getConfig('http.enable', true)) {
-    //         $this->addWorker([$this, 'createHttpServer'], 'http server');
-    //     }
-    // }
+    protected function prepareHttp()
+    {
+        if ($this->getConfig('http.enable', true)) {
+            $this->addWorker([$this, 'createHttpServer'], 'http server');
+        }
+    }
 
     // /**
     //  * "onRequest" listener.
