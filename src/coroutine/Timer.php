@@ -17,7 +17,7 @@ class Timer
     {
         $coroutine = Coroutine::create(static function () use ($delay, $func): void {
             msleep($delay);
-            Coroutine::create($func);
+            $func();
         });
         return $coroutine->getId();
     }
