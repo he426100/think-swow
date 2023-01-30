@@ -133,7 +133,7 @@ class Sandbox
             return Coroutine::id();
         } else {
             $cid = Coroutine::id();
-            while (!Coroutine::getCurrent()->getContext($cid)->offsetExists('#root')) {
+            while (!Coroutine::getContextFor($cid)->offsetExists('#root')) {
                 $cid = Coroutine::pid($cid);
                 if ($cid < 1) {
                     break;
