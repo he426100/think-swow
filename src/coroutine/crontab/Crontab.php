@@ -3,7 +3,7 @@
 namespace think\swow\coroutine\crontab;
 
 use think\swow\Coroutine;
-use function msleep;
+use think\swow\Channel;
 
 class Crontab
 {
@@ -20,10 +20,9 @@ class Crontab
         Coroutine::create(function () {
             $parser = new Parser();
             while (1) {
-                $current = (int)(microdate('s.v') * 1000);
-                $sleep = 60_000 - $current;
-                msleep($sleep ?: 1);
- 
+                $sleep = 60 - time() % 60;
+                (new Channel())->pop($sleep * 1000);
+
                 foreach ($this->crontabs as $crontab) {
                     list($rule, $func) = $crontab;
                     $times = $parser->parse($rule);
@@ -33,7 +32,7 @@ class Crontab
                             if ($wait <= 0) {
                                 $wait = 1;
                             }
-                            msleep($wait);
+                            (new Channel())->pop($wait);
                             $func();
                         });
                     }
