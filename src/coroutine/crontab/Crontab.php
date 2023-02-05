@@ -21,7 +21,7 @@ class Crontab
             $parser = new Parser();
             while (1) {
                 $sleep = 60 - time() % 60;
-                (new Channel())->pop($sleep * 1000);
+                (new Channel())->pop((float)$sleep);
 
                 foreach ($this->crontabs as $crontab) {
                     list($rule, $func) = $crontab;
@@ -30,9 +30,9 @@ class Crontab
                         Coroutine::create(static function () use ($time, $func) {
                             $wait = ($time - time()) * 1000;
                             if ($wait <= 0) {
-                                $wait = 1;
+                                $wait = 0.001;
                             }
-                            (new Channel())->pop($wait);
+                            (new Channel())->pop((float)$wait);
                             $func();
                         });
                     }
