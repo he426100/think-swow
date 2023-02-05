@@ -28,7 +28,7 @@ class Crontab
                     $times = $parser->parse($rule);
                     foreach ($times as $time) {
                         Coroutine::create(static function () use ($time, $func) {
-                            $wait = ($time - time()) * 1000;
+                            $wait = $time - time();
                             if ($wait <= 0) {
                                 $wait = 0.001;
                             }
