@@ -249,6 +249,9 @@ trait InteractsWithHttp
         $this->setHeader($res, $response->getHeader());
         $res->setBody($response->getContent());
 
-        $con->sendHttpResponse($res);
+        try {
+            $con->sendHttpResponse($res);
+        } catch (\Throwable) {
+        }
     }
 }
