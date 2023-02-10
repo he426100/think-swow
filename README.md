@@ -1,6 +1,6 @@
 # ThinkPHP Swow 扩展
 
-修改自（[top-think/think-swoole](https://github.com/top-think/think-swoole)），仅用作个人学习。已实现command中运行，下一步是测试http。
+修改自（[top-think/think-swoole](https://github.com/top-think/think-swoole)），仅用作个人学习。已实现command、http，下一步是实现websocket。
 
 ### 并发操作数据库  
 ```
