@@ -3,8 +3,10 @@
 namespace think\swow\concerns;
 
 use Swow\Socket;
+use Swow\Http\Status;
 use Swow\Psr7\Server\ServerConnection;
 use Swow\Psr7\Message\ServerRequest;
+use Swow\Psr7\Message\Response as Psr7Response;
 use think\App;
 use think\Cookie;
 use think\Event;
@@ -32,277 +34,221 @@ trait InteractsWithHttp
 
     public function createHttpServer()
     {
-        // $this->preloadHttp();
+        $this->preloadHttp();
 
-        // $host    = $this->getConfig('http.host');
-        // $port    = $this->getConfig('http.port');
-        // $options = $this->getConfig('http.options', []);
+        $host    = $this->getConfig('http.host');
+        $port    = $this->getConfig('http.port');
+        $options = $this->getConfig('http.options', []);
 
-        // $server = new Server();
-        // $server->bind($host, $port, Socket::BIND_FLAG_REUSEPORT);
+        $server = new Server();
+        $server->bind($host, $port, Socket::BIND_FLAG_REUSEPORT);
 
-        // $server->handle(function (ServerRequest $request, ServerConnection $connection) {
-        //     $this->onRequest($request, $connection);
-        // });
+        $server->handle(function (ServerRequest $request, ServerConnection $connection) {
+            if ($this->wsEnable && $this->isWebsocketRequest($request)) {
+                throw new \Exception('暂不支持');
+            } else {
+                $this->onRequest($request, $connection);
+            }
+        });
+
+        $server->start();
     }
 
     protected function preloadHttp()
     {
-        // $http = $this->app->http;
-        // $this->app->invokeMethod([$http, 'loadMiddleware'], [], true);
+        $http = $this->app->http;
+        $this->app->invokeMethod([$http, 'loadMiddleware'], [], true);
 
-        // if ($this->app->config->get('app.with_route', true)) {
-        //     $this->app->invokeMethod([$http, 'loadRoutes'], [], true);
-        //     $route = clone $this->app->route;
-        //     $this->modifyProperty($route, null);
-        //     unset($this->app->route);
+        if ($this->app->config->get('app.with_route', true)) {
+            $this->app->invokeMethod([$http, 'loadRoutes'], [], true);
+            $route = clone $this->app->route;
+            $this->modifyProperty($route, null);
+            unset($this->app->route);
 
-        //     $this->app->resolving(SwowHttp::class, function ($http, App $app) use ($route) {
-        //         $newRoute = clone $route;
-        //         $this->modifyProperty($newRoute, $app);
-        //         $app->instance('route', $newRoute);
-        //     });
-        // }
+            $this->app->resolving(SwowHttp::class, function ($http, App $app) use ($route) {
+                $newRoute = clone $route;
+                $this->modifyProperty($newRoute, $app);
+                $app->instance('route', $newRoute);
+            });
+        }
 
-        // $middleware = clone $this->app->middleware;
-        // $this->modifyProperty($middleware, null);
-        // unset($this->app->middleware);
+        $middleware = clone $this->app->middleware;
+        $this->modifyProperty($middleware, null);
+        unset($this->app->middleware);
 
-        // $this->app->resolving(SwowHttp::class, function ($http, App $app) use ($middleware) {
-        //     $newMiddleware = clone $middleware;
-        //     $this->modifyProperty($newMiddleware, $app);
-        //     $app->instance('middleware', $newMiddleware);
-        // });
+        $this->app->resolving(SwowHttp::class, function ($http, App $app) use ($middleware) {
+            $newMiddleware = clone $middleware;
+            $this->modifyProperty($newMiddleware, $app);
+            $app->instance('middleware', $newMiddleware);
+        });
 
-        // unset($this->app->http);
-        // $this->app->bind(Http::class, SwowHttp::class);
+        unset($this->app->http);
+        $this->app->bind(Http::class, SwowHttp::class);
+    }
+
+    protected function isWebsocketRequest(ServerRequest $req)
+    {
+        return false;
     }
 
     protected function prepareHttp()
     {
         if ($this->getConfig('http.enable', true)) {
+            $this->wsEnable = $this->getConfig('websocket.enable', false);
+
+            if ($this->wsEnable) {
+                // $this->prepareWebsocket();
+            }
+
             $this->addWorker([$this, 'createHttpServer'], 'http server');
         }
     }
 
-    // /**
-    //  * "onRequest" listener.
-    //  *
-    //  * @param ServerRequest $req
-    //  * @param ServerConnection  $res
-    //  */
-    // public function onRequest($req, $con)
-    // {
-    //     Coroutine::create(function () use ($req, $con) {
-    //         $this->runInSandbox(function (Http $http, Event $event, SwowApp $app) use ($req, $con) {
-    //             $app->setInConsole(false);
+    /**
+     * "onRequest" listener.
+     *
+     * @param ServerRequest $req
+     * @param ServerConnection $res
+     */
+    public function onRequest($req, $con)
+    {
+        Coroutine::create(function () use ($req, $con) {
+            $this->runInSandbox(function (Http $http, Event $event, SwowApp $app) use ($req, $con) {
+                $app->setInConsole(false);
 
-    //             $request = $this->prepareRequest($req);
+                $request = $this->prepareRequest($req);
 
-    //             try {
-    //                 $response = $this->handleRequest($http, $request);
-    //             } catch (Throwable $e) {
-    //                 $response = $this->app
-    //                     ->make(Handle::class)
-    //                     ->render($request, $e);
-    //             }
+                try {
+                    $response = $this->handleRequest($http, $request);
+                } catch (Throwable $e) {
+                    $response = $this->app
+                        ->make(Handle::class)
+                        ->render($request, $e);
+                }
 
-    //             $this->setCookie($con, $app->cookie);
-    //             $this->sendResponse($con, $request, $response);
-    //         });
-    //     });
-    // }
+                $res = new Psr7Response();
+                // $this->setCookie($res, $app->cookie);
+                $this->sendResponse($con, $res, $request, $response);
+            });
+        });
+    }
 
-    // protected function handleRequest(Http $http, $request)
-    // {
-    //     $level = ob_get_level();
-    //     ob_start();
+    protected function handleRequest(Http $http, $request)
+    {
+        $level = ob_get_level();
+        ob_start();
 
-    //     $response = $http->run($request);
+        $response = $http->run($request);
 
-    //     $content = $response->getContent();
+        $content = $response->getContent();
 
-    //     if (ob_get_level() == 0) {
-    //         ob_start();
-    //     }
+        if (ob_get_level() == 0) {
+            ob_start();
+        }
 
-    //     $http->end($response);
+        $http->end($response);
 
-    //     if (ob_get_length() > 0) {
-    //         $response->content(ob_get_contents() . $content);
-    //     }
+        if (ob_get_length() > 0) {
+            $response->content(ob_get_contents() . $content);
+        }
 
-    //     while (ob_get_level() > $level) {
-    //         ob_end_clean();
-    //     }
+        while (ob_get_level() > $level) {
+            ob_end_clean();
+        }
 
-    //     return $response;
-    // }
+        return $response;
+    }
 
-    // protected function prepareRequest(ServerRequest $req)
-    // {
-    //     $header = $req->header ?: [];
-    //     $server = $req->server ?: [];
+    protected function prepareRequest(ServerRequest $req)
+    {
+        $header = $req->getHeaders();
+        $server = $req->getServerParams();
 
-    //     foreach ($header as $key => $value) {
-    //         $server['http_' . str_replace('-', '_', $key)] = $value;
-    //     }
+        foreach ($header as $key => $values) {
+            $server['http_' . str_replace('-', '_', $key)] = implode(", ", $values);
+        }
 
-    //     // 重新实例化请求对象 处理swow请求数据
-    //     /** @var \think\Request $request */
-    //     $request = $this->app->make('request', [], true);
+        // 重新实例化请求对象 处理swow请求数据
+        /** @var \think\Request $request */
+        $request = $this->app->make('request', [], true);
 
-    //     return $request
-    //         ->withHeader($header)
-    //         ->withServer($server)
-    //         ->withGet($req->get ?: [])
-    //         ->withPost($req->post ?: [])
-    //         ->withCookie($req->cookie ?: [])
-    //         ->withFiles($this->getFiles($req))
-    //         ->withInput($req->rawContent())
-    //         ->setBaseUrl($req->server['request_uri'])
-    //         ->setUrl($req->server['request_uri'] . (!empty($req->server['query_string']) ? '?' . $req->server['query_string'] : ''))
-    //         ->setPathinfo(ltrim($req->server['path_info'], '/'));
-    // }
+        return $request
+            ->withHeader($header)
+            ->withServer($server)
+            ->withGet($req->getQueryParams())
+            ->withPost($req->getParsedBody())
+            ->withCookie($req->getCookieParams())
+            ->withFiles($this->getFiles($req))
+            ->withInput($req->getBody())
+            ->setBaseUrl($req->getUri()->getHost())
+            ->setUrl($req->getUri()->getPath() . $req->getUri()->getQuery())
+            ->setPathinfo(ltrim($req->getUri()->getPath(), '/'));
+    }
 
-    // protected function getFiles(Request $req)
-    // {
-    //     if (empty($req->files)) {
-    //         return [];
-    //     }
+    protected function getFiles(ServerRequest $req)
+    {
+        if (empty($req->getUploadedFiles())) {
+            return [];
+        }
 
-    //     return array_map(function ($file) {
-    //         if (!Arr::isAssoc($file)) {
-    //             $files = [];
-    //             foreach ($file as $f) {
-    //                 $files['name'][]     = $f['name'];
-    //                 $files['type'][]     = $f['type'];
-    //                 $files['tmp_name'][] = $f['tmp_name'];
-    //                 $files['error'][]    = $f['error'];
-    //                 $files['size'][]     = $f['size'];
-    //             }
-    //             return $files;
-    //         }
-    //         return $file;
-    //     }, $req->files);
-    // }
+        return array_map(function ($file) {
+            if (!Arr::isAssoc($file)) {
+                $files = [];
+                foreach ($file as $f) {
+                    $files['name'][]     = $f['name'];
+                    $files['type'][]     = $f['type'];
+                    $files['tmp_name'][] = $f['tmp_name'];
+                    $files['error'][]    = $f['error'];
+                    $files['size'][]     = $f['size'];
+                }
+                return $files;
+            }
+            return $file;
+        }, $req->getUploadedFiles());
+    }
 
-    // protected function setCookie(Response $res, Cookie $cookie)
-    // {
-    //     foreach ($cookie->getCookie() as $name => $val) {
-    //         [$value, $expire, $option] = $val;
+    protected function setCookie(Psr7Response $res, Cookie $cookie)
+    {
+        throw new \Exception('暂不支持');
+    }
 
-    //         $res->cookie($name, $value, $expire, $option['path'], $option['domain'], (bool) $option['secure'], (bool) $option['httponly'], $option['samesite']);
-    //     }
-    // }
+    protected function setHeader(Psr7Response $res, array $headers)
+    {
+        foreach ($headers as $key => $val) {
+            $res->setHeader($key, $val);
+        }
+    }
 
-    // protected function setHeader(Response $res, array $headers)
-    // {
-    //     foreach ($headers as $key => $val) {
-    //         $res->header($key, $val);
-    //     }
-    // }
+    protected function setStatus(Psr7Response $res, $code)
+    {
+        $res->setStatus($code, Status::getReasonPhraseOf($code));
+    }
 
-    // protected function setStatus(Response $res, $code)
-    // {
-    //     $res->status($code, Status::getReasonPhrase($code));
-    // }
+    protected function sendResponse(ServerConnection $con, Psr7Response $res, \think\Request $request, \think\Response $response)
+    {
+        switch (true) {
+            case $response instanceof FileResponse:
+                $this->sendFile($con, $res, $request, $response);
+                break;
+            default:
+                $this->sendContent($con, $res, $response);
+        }
+    }
 
-    // protected function sendResponse(Response $res, \think\Request $request, \think\Response $response)
-    // {
-    //     switch (true) {
-    //         case $response instanceof FileResponse:
-    //             $this->sendFile($res, $request, $response);
-    //             break;
-    //         default:
-    //             $this->sendContent($res, $response);
-    //     }
-    // }
+    protected function sendFile(ServerConnection $con, Psr7Response $res, \think\Request $request, FileResponse $response)
+    {
+        throw new \Exception('暂不支持');
+    }
 
-    // protected function sendFile(Response $res, \think\Request $request, FileResponse $response)
-    // {
-    //     $ifNoneMatch = $request->header('If-None-Match');
-    //     $ifRange     = $request->header('If-Range');
+    protected function sendContent(ServerConnection $con, Psr7Response $res, \think\Response $response)
+    {
+        // 由于开启了 Transfer-Encoding: chunked，根据 HTTP 规范，不再需要设置 Content-Length
+        $response->header(['Content-Length' => null]);
 
-    //     $code         = $response->getCode();
-    //     $file         = $response->getFile();
-    //     $eTag         = $response->getHeader('ETag');
-    //     $lastModified = $response->getHeader('Last-Modified');
+        $this->setStatus($res, $response->getCode());
+        $this->setHeader($res, $response->getHeader());
+        $res->setBody($response->getContent());
 
-    //     $fileSize = $file->getSize();
-    //     $offset   = 0;
-    //     $length   = -1;
-
-    //     if ($ifNoneMatch == $eTag) {
-    //         $code = 304;
-    //     } elseif (!$ifRange || $ifRange === $eTag || $ifRange === $lastModified) {
-    //         $range = $request->header('Range', '');
-    //         if (Str::startsWith($range, 'bytes=')) {
-    //             [$start, $end] = explode('-', substr($range, 6), 2) + [0];
-
-    //             $end = ('' === $end) ? $fileSize - 1 : (int) $end;
-
-    //             if ('' === $start) {
-    //                 $start = $fileSize - $end;
-    //                 $end   = $fileSize - 1;
-    //             } else {
-    //                 $start = (int) $start;
-    //             }
-
-    //             if ($start <= $end) {
-    //                 $end = min($end, $fileSize - 1);
-    //                 if ($start < 0 || $start > $end) {
-    //                     $code = 416;
-    //                     $response->header([
-    //                         'Content-Range' => sprintf('bytes */%s', $fileSize),
-    //                     ]);
-    //                 } elseif ($end - $start < $fileSize - 1) {
-    //                     $length = $end < $fileSize ? $end - $start + 1 : -1;
-    //                     $offset = $start;
-    //                     $code   = 206;
-    //                     $response->header([
-    //                         'Content-Range'  => sprintf('bytes %s-%s/%s', $start, $end, $fileSize),
-    //                         'Content-Length' => $end - $start + 1,
-    //                     ]);
-    //                 }
-    //             }
-    //         }
-    //     }
-
-    //     $this->setStatus($res, $code);
-    //     $this->setHeader($res, $response->getHeader());
-
-    //     if ($code >= 200 && $code < 300 && $length !== 0) {
-    //         $res->sendfile($file->getPathname(), $offset, $length);
-    //     } else {
-    //         $res->end();
-    //     }
-    // }
-
-    // protected function sendContent(Response $res, \think\Response $response)
-    // {
-    //     // 由于开启了 Transfer-Encoding: chunked，根据 HTTP 规范，不再需要设置 Content-Length
-    //     $response->header(['Content-Length' => null]);
-
-    //     $this->setStatus($res, $response->getCode());
-    //     $this->setHeader($res, $response->getHeader());
-
-    //     $content = $response->getContent();
-    //     if ($content) {
-    //         $contentSize = strlen($content);
-    //         $chunkSize   = 8192;
-
-    //         if ($contentSize > $chunkSize) {
-    //             $sendSize = 0;
-    //             do {
-    //                 if (!$res->write(substr($content, $sendSize, $chunkSize))) {
-    //                     break;
-    //                 }
-    //             } while (($sendSize += $chunkSize) < $contentSize);
-    //         } else {
-    //             $res->write($content);
-    //         }
-    //     }
-    //     $res->end();
-    // }
+        $con->sendHttpResponse($res);
+    }
 }
