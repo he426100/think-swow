@@ -1,12 +1,14 @@
 <?php
-
+// 参考了hyperf
 namespace think\swow\concerns;
 
 use Swow\Socket;
 use Swow\Http\Status;
+use Swow\Psr7\Psr7;
 use Swow\Psr7\Server\ServerConnection;
 use Swow\Psr7\Message\ServerRequest;
 use Swow\Psr7\Message\Response as Psr7Response;
+use Swow\Psr7\Message\ResponsePlusInterface;
 use think\App;
 use think\Cookie;
 use think\Event;
@@ -242,16 +244,31 @@ trait InteractsWithHttp
 
     protected function sendContent(ServerConnection $con, Psr7Response $res, \think\Response $response)
     {
-        // 由于开启了 Transfer-Encoding: chunked，根据 HTTP 规范，不再需要设置 Content-Length
-        $response->header(['Content-Length' => null]);
-
         $this->setStatus($res, $response->getCode());
         $this->setHeader($res, $response->getHeader());
         $res->setBody($response->getContent());
 
         try {
+            if ($con->getProtocolType() === ServerConnection::PROTOCOL_TYPE_WEBSOCKET) {
+                return;
+            }
+
+            $headers = $res->getHeaders();
+            if ($res instanceof ResponsePlusInterface) {
+                $headers = $res->getStandardHeaders();
+            } else {
+                $headers['Connection'] = $con->shouldKeepAlive() ? 'keep-alive' : 'closed';
+                if (! $res->hasHeader('Content-Length')) {
+                    $body = (string) $res->getBody();
+                    $headers['Content-Length'] = strlen($body);
+                }
+            }
+
+            $res = Psr7::setHeaders($res, $headers);
+
             $con->sendHttpResponse($res);
-        } catch (\Throwable) {
+        } catch (Throwable $e) {
+            $this->logServerError($e);
         }
     }
 }
