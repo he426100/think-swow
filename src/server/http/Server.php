@@ -2,6 +2,7 @@
 // 代码来自hyperf
 namespace think\swow\server\http;
 
+use think\App;
 use think\swow\Coroutine;
 use Swow\CoroutineException;
 use Swow\Errno;
@@ -17,11 +18,27 @@ class Server extends HttpServer
     public ?string $host = null;
 
     public ?int $port = null;
+    
+    /**
+     * @var App
+     */
+    protected $container;
 
     /**
      * @var callable
      */
     protected $handler;
+
+    /**
+     * Manager constructor.
+     * @param App $container
+     * @param integer $type
+     */
+    public function __construct(App $container, int $type = self::TYPE_TCP)
+    {
+        $this->container = $container;
+        parent::__construct($type);
+    }
 
     public function bind(string $name, int $port = 0, int $flags = Socket::BIND_FLAG_NONE): static
     {
@@ -60,21 +77,21 @@ class Server extends HttpServer
                                 }
                             }
                         } catch (Throwable $exception) {
-                            // $this->logger->critical((string) $exception);
+                            $this->container->log?->critical((string) $exception);
                         } finally {
                             $connection->close();
                         }
                     });
                 } catch (SocketException|CoroutineException $exception) {
                     if (in_array($exception->getCode(), [Errno::EMFILE, Errno::ENFILE, Errno::ENOMEM], true)) {
-                        // $this->logger->warning('Socket resources have been exhausted.');
+                        $this->container->log?->warning('Socket resources have been exhausted.');
                         sleep(1);
                     } else {
-                        // $this->logger->error((string) $exception);
+                        $this->container->log?->error((string) $exception);
                         break;
                     }
                 } catch (Throwable $exception) {
-                    // $this->logger->error((string) $exception);
+                    $this->container->log?->error((string) $exception);
                 }
             }
         });

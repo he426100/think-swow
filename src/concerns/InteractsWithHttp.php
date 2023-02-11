@@ -42,7 +42,7 @@ trait InteractsWithHttp
         $port    = $this->getConfig('http.port');
         $options = $this->getConfig('http.options', []);
 
-        $server = new Server();
+        $server = new Server($this->getContainer());
         $server->bind($host, $port, Socket::BIND_FLAG_REUSEPORT);
 
         $server->handle(function (ServerRequest $request, ServerConnection $connection) {
