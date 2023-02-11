@@ -32,7 +32,7 @@ use function substr;
  */
 trait InteractsWithHttp
 {
-    use ModifyProperty;
+    use InteractsWithWebsocket, ModifyProperty;
 
     public function createHttpServer()
     {
@@ -40,14 +40,13 @@ trait InteractsWithHttp
 
         $host    = $this->getConfig('http.host');
         $port    = $this->getConfig('http.port');
-        $options = $this->getConfig('http.options', []);
 
         $server = new Server($this->getContainer());
         $server->bind($host, $port, Socket::BIND_FLAG_REUSEPORT);
 
         $server->handle(function (ServerRequest $request, ServerConnection $connection) {
             if ($this->wsEnable && $this->isWebsocketRequest($request)) {
-                throw new \Exception('暂不支持');
+                $this->onHandShake($request, $connection);
             } else {
                 $this->onRequest($request, $connection);
             }
@@ -90,7 +89,9 @@ trait InteractsWithHttp
 
     protected function isWebsocketRequest(ServerRequest $req)
     {
-        return false;
+        $header = $req->getHeaders();
+        return strcasecmp(implode(", ", Arr::get($header, 'Connection', [])), 'upgrade') === 0 &&
+            strcasecmp(implode(", ", Arr::get($header, 'Upgrade', [])), 'websocket') === 0;
     }
 
     protected function prepareHttp()
@@ -99,7 +100,7 @@ trait InteractsWithHttp
             $this->wsEnable = $this->getConfig('websocket.enable', false);
 
             if ($this->wsEnable) {
-                // $this->prepareWebsocket();
+                $this->prepareWebsocket();
             }
 
             $this->addWorker([$this, 'createHttpServer'], 'http server');

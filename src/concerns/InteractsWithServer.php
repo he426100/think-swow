@@ -4,6 +4,7 @@ namespace think\swow\concerns;
 
 use think\App;
 use think\swow\Coroutine;
+use think\swow\Channel;
 use function Swow\Sync\waitAll;
 
 /**
@@ -46,6 +47,21 @@ trait InteractsWithServer
             });
         }
         waitAll();
+    }
+
+    public function runWithBarrier(callable $func, ...$params)
+    {
+        $channel = new Channel();
+
+        Coroutine::create(function (...$params) use ($channel, $func) {
+            Coroutine::defer(function () use ($channel) {
+                $channel->close();
+            });
+
+            call_user_func_array($func, $params);
+        }, ...$params);
+
+        $channel->pop();
     }
 
     /**

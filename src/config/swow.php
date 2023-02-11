@@ -7,6 +7,12 @@ return [
         'port'       => 80,
         'options'    => [],
     ],
+    'websocket'  => [
+        'enable'        => false,
+        'handler'       => Handler::class,
+        'listen'        => [],
+        'subscribe'     => [],
+    ],
     //连接池
     'pool'       => [
         'db'    => [
