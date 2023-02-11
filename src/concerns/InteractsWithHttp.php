@@ -194,7 +194,7 @@ trait InteractsWithHttp
             ->withInput($req->getBody())
             ->setMethod($req->getMethod())
             ->setBaseUrl($req->getUri()->getHost())
-            ->setUrl($req->getUri()->getPath() . $req->getUri()->getQuery())
+            ->setUrl($req->getUri()->getPath() . (!empty($req->getUri()->getQuery()) ? '?' . $req->getUri()->getQuery() : ''))
             ->setPathinfo(ltrim($req->getUri()->getPath(), '/'));
     }
 
