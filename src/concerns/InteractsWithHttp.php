@@ -22,6 +22,7 @@ use think\swow\server\http\Server;
 use think\swow\App as SwowApp;
 use think\swow\Http as SwowHttp;
 use think\swow\response\File as FileResponse;
+use think\swow\Cookie as SwowCookie;
 use Throwable;
 use function substr;
 
@@ -138,7 +139,7 @@ trait InteractsWithHttp
                 }
 
                 $res = new Psr7Response();
-                // $this->setCookie($res, $app->cookie);
+                $this->setCookie($res, $app->cookie);
                 $this->sendResponse($con, $res, $request, $response);
             });
         });
@@ -214,7 +215,7 @@ trait InteractsWithHttp
 
     protected function setCookie(Psr7Response $res, Cookie $cookie)
     {
-        throw new \Exception('暂不支持');
+        $res->setHeader('Set-Cookie', SwowCookie::toArray($cookie));
     }
 
     protected function setHeader(Psr7Response $res, array $headers)
@@ -322,7 +323,7 @@ trait InteractsWithHttp
             }
 
             $res = Psr7::setHeaders($res, $headers);
-
+            
             $con->sendHttpResponse($res);
         } catch (Throwable $e) {
             $this->logServerError($e);
