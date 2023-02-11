@@ -9,6 +9,7 @@ use Swow\Psr7\Server\ServerConnection;
 use Swow\Psr7\Message\ServerRequest;
 use Swow\Psr7\Message\Response as Psr7Response;
 use Swow\Psr7\Message\ResponsePlusInterface;
+use Swow\Psr7\Message\UploadedFile;
 use think\App;
 use think\Cookie;
 use think\Event;
@@ -183,6 +184,7 @@ trait InteractsWithHttp
             ->withCookie($req->getCookieParams())
             ->withFiles($this->getFiles($req))
             ->withInput($req->getBody())
+            ->setMethod($req->getMethod())
             ->setBaseUrl($req->getUri()->getHost())
             ->setUrl($req->getUri()->getPath() . $req->getUri()->getQuery())
             ->setPathinfo(ltrim($req->getUri()->getPath(), '/'));
@@ -194,19 +196,12 @@ trait InteractsWithHttp
             return [];
         }
 
-        return array_map(function ($file) {
-            if (!Arr::isAssoc($file)) {
-                $files = [];
-                foreach ($file as $f) {
-                    $files['name'][]     = $f['name'];
-                    $files['type'][]     = $f['type'];
-                    $files['tmp_name'][] = $f['tmp_name'];
-                    $files['error'][]    = $f['error'];
-                    $files['size'][]     = $f['size'];
-                }
-                return $files;
-            }
-            return $file;
+        return array_map(function (UploadedFile $file) {
+            $tmp = $file->toArray();
+            return [
+                ...$tmp,
+                'tmp_name' => $tmp['tmp_file']
+            ];
         }, $req->getUploadedFiles());
     }
 
