@@ -242,7 +242,61 @@ trait InteractsWithHttp
 
     protected function sendFile(ServerConnection $con, Psr7Response $res, \think\Request $request, FileResponse $response)
     {
-        throw new \Exception('暂不支持');
+        $ifNoneMatch = $request->header('If-None-Match');
+        $ifRange     = $request->header('If-Range');
+
+        $code         = $response->getCode();
+        $file         = $response->getFile();
+        $eTag         = $response->getHeader('ETag');
+        $lastModified = $response->getHeader('Last-Modified');
+
+        $fileSize = $file->getSize();
+        $offset   = 0;
+        $length   = -1;
+
+        if ($ifNoneMatch == $eTag) {
+            $code = 304;
+        } elseif (!$ifRange || $ifRange === $eTag || $ifRange === $lastModified) {
+            $range = $request->header('Range', '');
+            if (Str::startsWith($range, 'bytes=')) {
+                [$start, $end] = explode('-', substr($range, 6), 2) + [0];
+
+                $end = ('' === $end) ? $fileSize - 1 : (int) $end;
+
+                if ('' === $start) {
+                    $start = $fileSize - $end;
+                    $end   = $fileSize - 1;
+                } else {
+                    $start = (int) $start;
+                }
+
+                if ($start <= $end) {
+                    $end = min($end, $fileSize - 1);
+                    if ($start < 0 || $start > $end) {
+                        $code = 416;
+                        $response->header([
+                            'Content-Range' => sprintf('bytes */%s', $fileSize),
+                        ]);
+                    } elseif ($end - $start < $fileSize - 1) {
+                        $length = $end < $fileSize ? $end - $start + 1 : -1;
+                        $offset = $start;
+                        $code   = 206;
+                        $response->header([
+                            'Content-Range'  => sprintf('bytes %s-%s/%s', $start, $end, $fileSize),
+                            'Content-Length' => $end - $start + 1,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        $this->setStatus($res, $code);
+        $this->setHeader($res, $response->getHeader());
+
+        if ($code >= 200 && $code < 300 && $length !== 0) {
+            $con->sendHttpResponse($res);
+            $con->send(file_get_contents($file->getPathname()), $offset, $length);
+        }
     }
 
     protected function sendContent(ServerConnection $con, Psr7Response $res, \think\Response $response)
