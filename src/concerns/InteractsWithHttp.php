@@ -124,24 +124,22 @@ trait InteractsWithHttp
      */
     public function onRequest($req, $con)
     {
-        Coroutine::create(function () use ($req, $con) {
-            $this->runInSandbox(function (Http $http, Event $event, SwowApp $app) use ($req, $con) {
-                $app->setInConsole(false);
+        $this->runInSandbox(function (Http $http, Event $event, SwowApp $app) use ($req, $con) {
+            $app->setInConsole(false);
 
-                $request = $this->prepareRequest($req);
+            $request = $this->prepareRequest($req);
 
-                try {
-                    $response = $this->handleRequest($http, $request);
-                } catch (Throwable $e) {
-                    $response = $this->app
-                        ->make(Handle::class)
-                        ->render($request, $e);
-                }
+            try {
+                $response = $this->handleRequest($http, $request);
+            } catch (Throwable $e) {
+                $response = $this->app
+                    ->make(Handle::class)
+                    ->render($request, $e);
+            }
 
-                $res = new Psr7Response();
-                $this->setCookie($res, $app->cookie);
-                $this->sendResponse($con, $res, $request, $response);
-            });
+            $res = new Psr7Response();
+            $this->setCookie($res, $app->cookie);
+            $this->sendResponse($con, $res, $request, $response);
         });
     }
 
