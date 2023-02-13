@@ -57,43 +57,41 @@ class Server extends HttpServer
     public function start(): void
     {
         $this->listen();
-        Coroutine::create(function () {
-            while (true) {
-                try {
-                    $connection = $this->acceptConnection();
-                    Coroutine::create(function () use ($connection) {
-                        try {
-                            while (true) {
-                                $request = null;
-                                try {
-                                    $request = $connection->recvHttpRequest();
-                                    $handler = $this->handler;
-                                    $handler($request, $connection);
-                                } catch (HttpProtocolException $exception) {
-                                    $connection->error($exception->getCode(), $exception->getMessage());
-                                }
-                                if (! $request || ! Psr7::detectShouldKeepAlive($request)) {
-                                    break;
-                                }
+        while (true) {
+            try {
+                $connection = $this->acceptConnection();
+                Coroutine::create(function () use ($connection) {
+                    try {
+                        while (true) {
+                            $request = null;
+                            try {
+                                $request = $connection->recvHttpRequest();
+                                $handler = $this->handler;
+                                $handler($request, $connection);
+                            } catch (HttpProtocolException $exception) {
+                                $connection->error($exception->getCode(), $exception->getMessage());
                             }
-                        } catch (Throwable $exception) {
-                            $this->container->log?->critical((string) $exception);
-                        } finally {
-                            $connection->close();
+                            if (! $request || ! Psr7::detectShouldKeepAlive($request)) {
+                                break;
+                            }
                         }
-                    });
-                } catch (SocketException|CoroutineException $exception) {
-                    if (in_array($exception->getCode(), [Errno::EMFILE, Errno::ENFILE, Errno::ENOMEM], true)) {
-                        $this->container->log?->warning('Socket resources have been exhausted.');
-                        sleep(1);
-                    } else {
-                        $this->container->log?->error((string) $exception);
-                        break;
+                    } catch (Throwable $exception) {
+                        $this->container->log?->critical((string) $exception);
+                    } finally {
+                        $connection->close();
                     }
-                } catch (Throwable $exception) {
+                });
+            } catch (SocketException|CoroutineException $exception) {
+                if (in_array($exception->getCode(), [Errno::EMFILE, Errno::ENFILE, Errno::ENOMEM], true)) {
+                    $this->container->log?->warning('Socket resources have been exhausted.');
+                    sleep(1);
+                } else {
                     $this->container->log?->error((string) $exception);
+                    break;
                 }
+            } catch (Throwable $exception) {
+                $this->container->log?->error((string) $exception);
             }
-        });
+        }
     }
 }
