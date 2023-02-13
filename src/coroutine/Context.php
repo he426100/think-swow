@@ -1,5 +1,5 @@
 <?php
-// 代码来自hyperf
+
 namespace think\swow\coroutine;
 
 use ArrayObject;
@@ -10,12 +10,12 @@ class Context
 {
     /**
      * 获取协程上下文
-     * @param int $cid
+     * @param ?int $cid
      * @return Coroutine\Context
      */
-    public static function get($cid = 0)
+    public static function get($cid = null)
     {
-        return Coroutine::getCurrent()->getContext($cid);
+        return Coroutine::getContextFor($cid);
     }
 
     public static function getDataObject()
