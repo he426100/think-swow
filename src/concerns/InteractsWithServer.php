@@ -5,7 +5,6 @@ namespace think\swow\concerns;
 use think\App;
 use think\swow\Coroutine;
 use think\swow\Channel;
-use Swow\WatchDog;
 use function Swow\Sync\waitAll;
 
 /**
@@ -32,7 +31,6 @@ trait InteractsWithServer
      */
     public function start(string $envName): void
     {
-        WatchDog::run();
         $this->initialize();
         $this->triggerEvent('init');
 
