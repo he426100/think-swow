@@ -1,5 +1,7 @@
 <?php
 
+use think\swow\websocket\Handler;
+
 return [
     'http'       => [
         'enable'     => true,
