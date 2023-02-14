@@ -12,10 +12,10 @@ use Swow\Psr7\Psr7;
 use Swow\WebSocket\Opcode;
 use Swow\WebSocket\WebSocket as SwowWebSocket;
 use Swow\Psr7\Message\WebSocketFrame;
-use think\App;
 use think\helper\Str;
 use think\swow\contract\websocket\HandlerInterface;
 use think\swow\Middleware;
+use think\swow\App as SwowApp;
 
 /**
  * Trait InteractsWithWebsocket
@@ -36,10 +36,10 @@ trait InteractsWithWebsocket
      */
     public function onHandShake($req, $con)
     {
-        $this->runInSandbox(function (App $app, HandlerInterface $handler) use ($req, $con) {
+        $this->runInSandbox(function (SwowApp $app, HandlerInterface $handler) use ($req, $con) {
             $con = $this->upgradeToWebSocket($con, $req);
 
-            $request = $this->prepareRequest($req);
+            $request = $this->prepareRequest($app, $req);
             $request = $this->setRequestThroughMiddleware($app, $request);
 
             $this->runWithBarrier(function () use ($handler, $request, $con) {
@@ -80,11 +80,11 @@ trait InteractsWithWebsocket
     }
 
     /**
-     * @param App $app
+     * @param SwowApp $app
      * @param \think\Request $request
      * @return \think\Request
      */
-    protected function setRequestThroughMiddleware(App $app, \think\Request $request)
+    protected function setRequestThroughMiddleware(SwowApp $app, \think\Request $request)
     {
         $app->instance('request', $request);
         return Middleware::make($app, $this->getConfig('websocket.middleware', []))
