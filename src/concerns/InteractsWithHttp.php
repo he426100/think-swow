@@ -145,26 +145,9 @@ trait InteractsWithHttp
 
     protected function handleRequest(Http $http, $request)
     {
-        $level = ob_get_level();
-        ob_start();
-
         $response = $http->run($request);
 
-        $content = $response->getContent();
-
-        if (ob_get_level() == 0) {
-            ob_start();
-        }
-
         $http->end($response);
-
-        if (ob_get_length() > 0) {
-            $response->content(ob_get_contents() . $content);
-        }
-
-        while (ob_get_level() > $level) {
-            ob_end_clean();
-        }
 
         return $response;
     }
