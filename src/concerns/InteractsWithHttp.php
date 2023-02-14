@@ -127,12 +127,12 @@ trait InteractsWithHttp
         $this->runWithBarrier([$this, 'runInSandbox'], function (Http $http, Event $event, SwowApp $app) use ($req, $con) {
             $app->setInConsole(false);
 
-            $request = $this->prepareRequest($req);
+            $request = $this->prepareRequest($app, $req);
 
             try {
                 $response = $this->handleRequest($http, $request);
             } catch (Throwable $e) {
-                $response = $this->app
+                $response = $app
                     ->make(Handle::class)
                     ->render($request, $e);
             }
@@ -169,7 +169,7 @@ trait InteractsWithHttp
         return $response;
     }
 
-    protected function prepareRequest(ServerRequest $req)
+    protected function prepareRequest(SwowApp $app, ServerRequest $req)
     {
         $header = $req->getHeaders();
         $server = $req->getServerParams();
@@ -180,7 +180,7 @@ trait InteractsWithHttp
 
         // 重新实例化请求对象 处理swow请求数据
         /** @var \think\Request $request */
-        $request = $this->app->make('request', [], true);
+        $request = $app->make('request', [], true);
 
         return $request
             ->withHeader($header)
