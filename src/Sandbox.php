@@ -27,13 +27,6 @@ class Sandbox
 {
     use ModifyProperty;
 
-    /**
-     * The app containers in different coroutine environment.
-     *
-     * @var SwowApp[]
-     */
-    protected $snapshots = [];
-
     /** @var SwowApp */
     protected $app;
 
@@ -103,7 +96,6 @@ class Sandbox
     {
         if ($app = $this->getSnapshot()) {
             $app->clearInstances();
-            unset($this->snapshots[$this->getSnapshotId()]);
         }
 
         Context::clear();
@@ -150,14 +142,12 @@ class Sandbox
      */
     public function getSnapshot($init = false)
     {
-        return $this->snapshots[$this->getSnapshotId($init)] ?? null;
+        return Context::getData('snap-' . $this->getSnapshotId($init));
     }
 
     public function setSnapshot(Container $snapshot)
     {
-        $this->snapshots[$this->getSnapshotId()] = $snapshot;
-
-        return $this;
+        return Context::rememberData('snap-' . $this->getSnapshotId(), $snapshot);
     }
 
     public function setInstance(Container $app)
