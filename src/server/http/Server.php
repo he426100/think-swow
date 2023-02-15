@@ -1,5 +1,7 @@
 <?php
-// 代码来自hyperf
+// @link https://github.com/swow/swow/blob/develop/examples/http_server/mixed.php
+// @link https://github.com/hyperf/engine-swow/blob/master/src/Http/Server.php
+
 namespace think\swow\server\http;
 
 use think\App;
@@ -85,6 +87,9 @@ class Server extends HttpServer
                 if (in_array($exception->getCode(), [Errno::EMFILE, Errno::ENFILE, Errno::ENOMEM], true)) {
                     $this->container->log?->warning('Socket resources have been exhausted.');
                     sleep(1);
+                } elseif ($exception->getCode() === Errno::ECANCELED) {
+                    $this->container->log?->info('Socket accept has been canceled.');
+                    break;
                 } else {
                     $this->container->log?->error((string) $exception);
                     break;

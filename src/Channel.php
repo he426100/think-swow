@@ -1,5 +1,5 @@
 <?php
-// 代码来自hyperf
+// @link https://github.com/hyperf/engine-swow/blob/master/src/Channel.php
 namespace think\swow;
 
 use Swow\Channel as SwowChannel;

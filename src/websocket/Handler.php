@@ -7,7 +7,6 @@ use Swow\Psr7\Server\ServerConnection;
 use think\Event;
 use think\Request;
 use think\swow\contract\websocket\HandlerInterface;
-use think\swow\websocket\Event as WsEvent;
 
 class Handler implements HandlerInterface
 {
@@ -36,8 +35,6 @@ class Handler implements HandlerInterface
     public function onMessage(ServerConnection $connection, WebSocketFrame $frame)
     {
         $this->event->trigger('swow.websocket.Message', $frame);
-
-        $this->event->trigger('swow.websocket.Event', $this->decode($frame->getPayloadData()));
     }
 
     /**
@@ -47,23 +44,5 @@ class Handler implements HandlerInterface
     public function onClose(ServerConnection $connection)
     {
         $this->event->trigger('swow.websocket.Close', $connection);
-    }
-
-    protected function decode($payload)
-    {
-        $data = json_decode($payload, true);
-
-        return new WsEvent($data['type'] ?? null, $data['data'] ?? null);
-    }
-
-    public function encodeMessage($message)
-    {
-        if ($message instanceof WsEvent) {
-            return json_encode([
-                'type' => $message->type,
-                'data' => $message->data,
-            ]);
-        }
-        return $message;
     }
 }

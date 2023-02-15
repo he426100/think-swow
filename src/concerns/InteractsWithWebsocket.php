@@ -1,5 +1,6 @@
 <?php
-
+// @link https://github.com/swow/swow/blob/develop/examples/http_server/mixed.php
+// @link https://github.com/hyperf/engine-swow/blob/master/src/WebSocket/WebSocket.php
 namespace think\swow\concerns;
 
 use Swow\Psr7\Server\ServerConnection;
@@ -61,12 +62,13 @@ trait InteractsWithWebsocket
                             $handler->onClose($con);
                             break 2;
                         default:
+                            // $connection->sendWebSocketFrame( Psr7::createWebSocketTextFrame("You said: {$frame->getPayloadData()}"));
                             $handler->onMessage($con, $frame);
                     }
                 }
             });
         });
-    }
+    } 
 
     protected function upgradeToWebSocket(ServerConnection $connection, RequestPlusInterface $request)
     {

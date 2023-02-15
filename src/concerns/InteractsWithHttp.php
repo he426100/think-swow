@@ -17,7 +17,6 @@ use think\exception\Handle;
 use think\helper\Arr;
 use think\helper\Str;
 use think\Http;
-use think\swow\Coroutine;
 use think\swow\server\http\Server;
 use think\swow\App as SwowApp;
 use think\swow\Http as SwowHttp;
@@ -277,7 +276,11 @@ trait InteractsWithHttp
 
         if ($code >= 200 && $code < 300 && $length !== 0) {
             $con->sendHttpResponse($res);
-            $con->send(file_get_contents($file->getPathname()), $offset, $length);
+            if (method_exists($con, 'sendFile')) {
+                $con->sendFile($file->getPathname(), $offset, $length);
+            } else {
+                $con->send(file_get_contents($file->getPathname()), $offset, $length);
+            }
         }
     }
 

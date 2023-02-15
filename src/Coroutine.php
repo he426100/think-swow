@@ -1,5 +1,5 @@
 <?php
-// 代码来自hyperf
+// @link https://github.com/hyperf/engine-swow/blob/master/src/Coroutine.php
 namespace think\swow;
 
 use ArrayObject;
