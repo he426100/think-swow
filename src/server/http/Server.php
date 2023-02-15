@@ -78,7 +78,7 @@ class Server extends HttpServer
                             }
                         }
                     } catch (Throwable $exception) {
-                        $this->container->log?->critical((string) $exception);
+                        // $this->container->log?->critical((string) $exception);
                     } finally {
                         $connection->close();
                     }
