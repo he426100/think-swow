@@ -14,7 +14,6 @@ namespace think\swow;
 use think\swow\concerns\InteractsWithHttp;
 use think\swow\concerns\InteractsWithPools;
 use think\swow\concerns\InteractsWithServer;
-use think\swow\concerns\InteractsWithTracing;
 use think\swow\concerns\WithApplication;
 use think\swow\concerns\WithContainer;
 
@@ -26,7 +25,6 @@ class Manager
     use InteractsWithServer,
         InteractsWithHttp,
         InteractsWithPools,
-        InteractsWithTracing,
         WithContainer,
         WithApplication;
 
@@ -37,7 +35,5 @@ class Manager
     {
         $this->preparePools();
         $this->prepareHttp();
-        $this->prepareTracing();
     }
-
 }
