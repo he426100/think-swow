@@ -142,12 +142,13 @@ class Sandbox
      */
     public function getSnapshot($init = false)
     {
-        return Context::getData('snap-' . $this->getSnapshotId($init));
+        return Context::get($this->getSnapshotId($init))['#snap'] ?? null;
     }
 
     public function setSnapshot(Container $snapshot)
     {
-        return Context::rememberData('snap-' . $this->getSnapshotId(), $snapshot);
+        Context::get($this->getSnapshotId())['#snap'] = $snapshot;
+        return $this;
     }
 
     public function setInstance(Container $app)
