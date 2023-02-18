@@ -74,6 +74,22 @@
     {
         return call_user_func_array([$this->connect(), $method], $args);
     }
+    public function connect(string $name = null, bool $force = false)
+    {
+        return $this->instance($name, $force);
+    }
+    protected function instance(string $name = null, bool $force = false): ConnectionInterface
+    {
+        if (empty($name)) {
+            $name = $this->getConfig('default', 'mysql');
+        }
+
+        if ($force || !isset($this->instance[$name])) {
+            $this->instance[$name] = $this->createConnection($name);
+        }
+
+        return $this->instance[$name];
+    }
     ```
 - think\Model  
     对 `think\Model` 的任何调用都会先走到 `db` 方法，`db()` 代码如下  
