@@ -193,6 +193,6 @@ class Handler implements HandlerInterface
 
     protected function push($data)
     {
-        $this->websocket->send(Psr7::createWebSocketTextFrame($data));
+        $this->websocket->send(Psr7::createWebSocketTextFrame($this->encodeMessage($data)));
     }
 }
