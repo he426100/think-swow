@@ -3,14 +3,13 @@
 namespace think\swow\websocket\socketio;
 
 use Exception;
-use Swow\Psr7\Server\ServerConnection;
 use Swow\Psr7\Message\WebSocketFrame;
-use Swow\Psr7\Psr7;
 use think\Config;
 use think\Event;
 use think\Request;
 use think\swow\coroutine\Timer;
 use think\swow\contract\websocket\HandlerInterface;
+use think\swow\Websocket;
 use think\swow\websocket\Event as WsEvent;
 
 class Handler implements HandlerInterface
@@ -21,7 +20,7 @@ class Handler implements HandlerInterface
     protected $event;
 
     /**
-     * @var ServerConnection
+     * @var Websocket
      */
     protected $websocket;
 
@@ -33,10 +32,11 @@ class Handler implements HandlerInterface
     protected $pingInterval;
     protected $pingTimeout;
 
-    public function __construct(Event $event, Config $config)
+    public function __construct(Event $event, Config $config, Websocket $websocket)
     {
         $this->event        = $event;
         $this->config       = $config;
+        $this->websocket    = $websocket;
         $this->pingInterval = $this->config->get('swow.websocket.ping_interval', 25000);
         $this->pingTimeout  = $this->config->get('swow.websocket.ping_timeout', 60000);
     }
@@ -46,9 +46,8 @@ class Handler implements HandlerInterface
      *
      * @param Request $request
      */
-    public function onOpen(ServerConnection $connection, Request $request)
+    public function onOpen(Request $request)
     {
-        $this->websocket = $connection;
         $this->eio = $request->param('EIO');
 
         $payload = json_encode(
@@ -77,7 +76,7 @@ class Handler implements HandlerInterface
      *
      * @param WebSocketFrame $frame
      */
-    public function onMessage(ServerConnection $connection, WebSocketFrame $frame)
+    public function onMessage(WebSocketFrame $frame)
     {
         $enginePacket = EnginePacket::fromString($frame->getPayloadData());
 
@@ -131,7 +130,7 @@ class Handler implements HandlerInterface
     /**
      * "onClose" listener.
      */
-    public function onClose(ServerConnection $connection)
+    public function onClose()
     {
         Timer::deleteTimer($this->pingTimeoutTimer);
         Timer::deleteTimer($this->pingIntervalTimer);
@@ -193,6 +192,6 @@ class Handler implements HandlerInterface
 
     protected function push($data)
     {
-        $this->websocket->send(Psr7::createWebSocketTextFrame($this->encodeMessage($data)));
+        $this->websocket->push($data);
     }
 }

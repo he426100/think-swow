@@ -3,29 +3,29 @@
 namespace think\swow\contract\websocket;
 
 use Swow\Psr7\Message\WebSocketFrame;
-use Swow\Psr7\Server\ServerConnection;
 use think\Request;
 
 interface HandlerInterface
 {
     /**
      * "onOpen" listener.
-     * @param ServerConnection $connection
+     *
      * @param Request $request
-     * 
      */
-    public function onOpen(ServerConnection $connection, Request $request);
+    public function onOpen(Request $request);
 
     /**
      * "onMessage" listener.
-     * @param ServerConnection $connection
+     *
      * @param WebSocketFrame $frame
      */
-    public function onMessage(ServerConnection $connection, WebSocketFrame $frame);
+    public function onMessage(WebSocketFrame $frame);
 
     /**
      * "onClose" listener.
-     * @param ServerConnection $connection
      */
-    public function onClose(ServerConnection $connection);
+    public function onClose();
+
+    public function encodeMessage($message);
+
 }

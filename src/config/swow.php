@@ -12,6 +12,17 @@ return [
     'websocket'  => [
         'enable'        => false,
         'handler'       => Handler::class,
+        'ping_interval' => 25000,
+        'ping_timeout'  => 60000,
+        'room'          => [
+            'type'  => 'redis',
+            'redis' => [
+                'host'          => '127.0.0.1',
+                'port'          => 6379,
+                'max_active'    => 3,
+                'max_wait_time' => 5,
+            ],
+        ],
         'listen'        => [],
         'subscribe'     => [],
     ],

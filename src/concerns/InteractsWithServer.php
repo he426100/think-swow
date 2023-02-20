@@ -49,6 +49,11 @@ trait InteractsWithServer
         waitAll();
     }
 
+    public function sendMessage($message)
+    {
+        $this->triggerEvent('message', $message);
+    }
+
     public function runWithBarrier(callable $func, ...$params)
     {
         $channel = new Channel();
