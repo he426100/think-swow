@@ -35,6 +35,8 @@ class Websocket
     /** @var ServerConnection */
     protected $client;
 
+    protected $connected = true;
+
     /**
      * Websocket constructor.
      *
@@ -104,9 +106,14 @@ class Websocket
         return $this;
     }
 
+    public function setConnected($connected)
+    {
+        $this->connected = $connected;
+    }
+
     public function isEstablished()
     {
-        return !!$this->client;
+        return $this->connected;
     }
 
     /**

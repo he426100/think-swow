@@ -23,6 +23,7 @@ use think\swow\websocket\Room;
 use think\swow\App as SwowApp;
 use think\swow\Coroutine;
 use think\swow\Channel;
+use Throwable;
 
 /**
  * Trait InteractsWithWebsocket
@@ -58,17 +59,19 @@ trait InteractsWithWebsocket
 
             $websocket->setClient($con);
 
-            $request = $this->prepareRequest($app, $req);
-            $request = $this->setRequestThroughMiddleware($app, $request);
-
             $fd = $con->getFd();
 
             $this->wsMessageChannel[$fd] = new Channel();
 
-            Coroutine::create(function () use ($con, $fd) {
+            Coroutine::create(function () use ($websocket, $con, $fd) {
                 //推送消息
                 while ($message = $this->wsMessageChannel[$fd]->pop()) {
-                    $con->sendWebSocketFrame(Psr7::createWebSocketTextFrame($message));
+                    try {
+                        $con->sendWebSocketFrame(Psr7::createWebSocketTextFrame($message));
+                    } catch (Throwable $e) {
+                        $this->logServerError($e);
+                    }
+                    $websocket->setConnected($con->isAvailable());
                 }
             });
 
@@ -76,36 +79,50 @@ trait InteractsWithWebsocket
                 $websocket->setSender($fd);
                 $websocket->join($fd);
 
-                $this->runWithBarrier(function () use ($request, $handler) {
-                    $handler->onOpen($request);
+                $this->runWithBarrier(function () use ($req, $app, $handler) {
+                    $request = $this->prepareRequest($app, $req);
+                    try {
+                        $request = $this->setRequestThroughMiddleware($app, $request);
+                        $handler->onOpen($request);
+                    } catch (Throwable $e) {
+                        $this->logServerError($e);
+                    }
                 });
 
                 $this->runWithBarrier(function () use ($handler, $con) {
                     while (true) {
-                        /**
-                         * @var WebSocketFrame
-                         */
-                        $frame = $con->recvWebSocketFrame();
-                        $opcode = $frame->getOpcode();
-                        switch ($opcode) {
-                            case Opcode::PING:
-                                $con->send(SwowWebSocket::PONG_FRAME);
-                                break;
-                            case Opcode::PONG:
-                                break;
-                            case Opcode::CLOSE:
-                                $handler->onClose();
-                                break 2;
-                            default:
-                                $handler->onMessage($frame);
-                        }
+                        try {
+                            /**
+                             * @var WebSocketFrame
+                             */
+                            $frame = $con->recvWebSocketFrame();
+                            $opcode = $frame->getOpcode();
+                            switch ($opcode) {
+                                case Opcode::PING:
+                                    $con->send(SwowWebSocket::PONG_FRAME);
+                                    break;
+                                case Opcode::PONG:
+                                    break;
+                                case Opcode::CLOSE:
+                                    $handler->onClose();
+                                    break;
+                                default:
+                                    $handler->onMessage($frame);
+                            }
+                        } catch (Throwable $e) {
+                            $this->logServerError($e);
+                        }  
                     }
                 });
 
                 //关闭连接
                 $con->close();
                 $this->runWithBarrier(function () use ($handler) {
-                    $handler->onClose();
+                    try {
+                        $handler->onClose();
+                    } catch (Throwable $e) {
+                        $this->logServerError($e);
+                    }
                 });
             } finally {
                 // leave all rooms
@@ -114,7 +131,7 @@ trait InteractsWithWebsocket
                     $this->wsMessageChannel[$fd]->close();
                     unset($this->wsMessageChannel[$fd]);
                 }
-                $websocket->setClient(null);
+                $websocket->setConnected(false);
             }
         });
     }

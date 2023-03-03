@@ -3,7 +3,6 @@
 namespace think\swow\concerns;
 
 use think\App;
-use think\console\Output;
 use think\exception\Handle;
 use Throwable;
 
@@ -70,9 +69,6 @@ trait WithContainer
     {
         /** @var Handle $handle */
         $handle = $this->container->make(Handle::class);
-
-        $handle->renderForConsole(new Output(), $e);
-
         $handle->report($e);
     }
 }

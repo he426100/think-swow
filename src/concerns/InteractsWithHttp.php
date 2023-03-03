@@ -131,9 +131,9 @@ trait InteractsWithHttp
             try {
                 $response = $this->handleRequest($http, $request);
             } catch (Throwable $e) {
-                $response = $app
-                    ->make(Handle::class)
-                    ->render($request, $e);
+                $handle = $this->app->make(Handle::class);
+                $handle->report($e);
+                $response = $handle->render($request, $e);
             }
 
             $res = new Psr7Response();
