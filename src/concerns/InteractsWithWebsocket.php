@@ -105,23 +105,13 @@ trait InteractsWithWebsocket
                                     break;
                                 case Opcode::CLOSE:
                                     $handler->onClose();
-                                    break;
+                                    break 2;
                                 default:
                                     $handler->onMessage($frame);
                             }
                         } catch (Throwable $e) {
                             $this->logServerError($e);
                         }  
-                    }
-                });
-
-                //关闭连接
-                $con->close();
-                $this->runWithBarrier(function () use ($handler) {
-                    try {
-                        $handler->onClose();
-                    } catch (Throwable $e) {
-                        $this->logServerError($e);
                     }
                 });
             } finally {
