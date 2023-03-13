@@ -1,13 +1,13 @@
-### http中获取客户端列表及推送消息给指定客户端
-1. 修改websocket.handler，在`onOpen`方法中加一行代码`$this->websocket->join('global');`
-2. 获取客户端列表
+### http中获取客户端列表及推送消息给指定客户端  
+1. 修改websocket.handler，在`onOpen`方法中加一行代码`$this->websocket->join('global');`  
+2. 获取客户端列表  
 ```php
 public function root(Room $room, $name = 'global')
 {
     return json($room->getClients($name));
 }
 ```
-3. 推送消息
+3. 推送消息  
 ```php
 /** 推送给指定客户端 */
 public function emit(Pusher $pusher, string $id, string $msg)
