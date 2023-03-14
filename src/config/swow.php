@@ -40,6 +40,15 @@ return [
         ],
         //自定义连接池
     ],
+    'ipc'        => [
+        'type'  => 'redis',
+        'redis' => [
+            'host'          => '127.0.0.1',
+            'port'          => 6379,
+            'max_active'    => 3,
+            'max_wait_time' => 5,
+        ],
+    ],
     //每个worker里需要预加载以共用的实例
     'concretes'  => [],
     //重置器

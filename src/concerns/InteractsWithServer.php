@@ -5,6 +5,7 @@ namespace think\swow\concerns;
 use think\App;
 use think\swow\Coroutine;
 use think\swow\coroutine\Barrier;
+use think\swow\Ipc;
 use function Swow\Sync\waitAll;
 
 /**
@@ -18,6 +19,9 @@ trait InteractsWithServer
      * @var array
      */
     protected $startFuncMap = [];
+
+    /** @var Ipc */
+    protected $ipc;
 
     public function addWorker(callable $func, $name = null): self
     {
@@ -34,24 +38,34 @@ trait InteractsWithServer
         $this->initialize();
         $this->triggerEvent('init');
 
-        foreach ($this->startFuncMap as $map) {
-            Coroutine::create(function () use ($map, $envName) {
-                [$func, $name] = $map;
+        //启动消息监听
+        $this->prepareIpc();
 
-                $this->clearCache();
-                $this->prepareApplication($envName);
+        Coroutine::create(function () use ($envName) {
+            $this->clearCache();
+            $this->prepareApplication($envName);
+            $this->ipc->listenMessage(posix_getpid());
+            $this->triggerEvent('workerStart');
 
-                $this->triggerEvent('workerStart');
-
-                $func();
-            });
-        }
+            foreach ($this->startFuncMap as $map) {
+                Coroutine::create(function () use ($map) {
+                    [$func, $name] = $map;
+                    $func();
+                });
+            }
+        });
         waitAll();
     }
 
-    public function sendMessage($message)
+    public function sendMessage($workerId, $message)
     {
-        $this->triggerEvent('message', $message);
+        $this->ipc->sendMessage($workerId, $message);
+    }
+
+    protected function prepareIpc()
+    {
+        $this->ipc = $this->container->make(Ipc::class);
+        $this->ipc->prepare();
     }
 
     public function runWithBarrier(callable $func, ...$params)

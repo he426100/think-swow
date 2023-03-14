@@ -76,8 +76,11 @@ trait InteractsWithWebsocket
             });
 
             try {
-                $websocket->setSender($fd);
-                $websocket->join($fd);
+                $pid = posix_getpid();
+                $id = "{$pid}.{$fd}";
+
+                $websocket->setSender($id);
+                $websocket->join($id);
 
                 $this->runWithBarrier(function () use ($req, $app, $handler) {
                     $request = $this->prepareRequest($app, $req);

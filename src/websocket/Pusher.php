@@ -60,8 +60,9 @@ class Pusher
         }
 
         foreach (array_unique($fds) as $fd) {
+            [$workerId, $fd] = explode('.', $fd);
             $data = $this->handler->encodeMessage($data);
-            $this->manager->sendMessage(new PushMessage((int) $fd, $data));
+            $this->manager->sendMessage((int) $workerId, new PushMessage($fd, $data));
         }
     }
 

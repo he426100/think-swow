@@ -137,11 +137,11 @@ class Websocket
     /**
      * Set sender fd.
      *
-     * @param int
+     * @param string
      *
      * @return $this
      */
-    public function setSender(int $fd)
+    public function setSender(string $fd)
     {
         $this->sender = $fd;
         return $this;
@@ -150,7 +150,7 @@ class Websocket
     /**
      * Get current sender fd.
      * 
-     * @return int
+     * @return string
      */
     public function getSender()
     {
