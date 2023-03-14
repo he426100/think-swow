@@ -61,11 +61,11 @@ trait InteractsWithWebsocket
 
             $fd = $con->getFd();
 
-            $this->wsMessageChannel[$fd] = new Channel();
+            $this->wsMessageChannel[$fd] = $wsMessageChannel = new Channel();
 
-            Coroutine::create(function () use ($websocket, $con, $fd) {
+            Coroutine::create(function () use ($websocket, $con, $wsMessageChannel) {
                 //推送消息
-                while ($message = $this->wsMessageChannel[$fd]->pop()) {
+                while ($message = $wsMessageChannel->pop()) {
                     try {
                         $con->sendWebSocketFrame(Psr7::createWebSocketTextFrame($message));
                     } catch (Throwable $e) {
