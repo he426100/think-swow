@@ -15,7 +15,7 @@
     "require": {
         "php": ">=8.1",
         "ext-json": "*",
-        "topthink/framework": "^6.1",
+        "topthink/framework": "^6.1|^8.0",
         "swow/swow": "^1.1"
     },
     "require-dev": {
