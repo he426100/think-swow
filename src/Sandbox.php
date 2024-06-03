@@ -10,6 +10,7 @@ use think\App;
 use think\Config;
 use think\Container;
 use think\Event;
+use think\exception\Handle;
 use think\swow\App as SwowApp;
 use think\swow\Coroutine;
 use think\swow\concerns\ModifyProperty;
@@ -75,11 +76,11 @@ class Sandbox
     public function run(Closure $callable)
     {
         $this->init();
-
+        $app = $this->getApplication();
         try {
-            $this->getApplication()->invoke($callable, [$this]);
+            $app->invoke($callable, [$this]);
         } catch (Throwable $e) {
-            throw $e;
+            $app->make(Handle::class)->report($e);
         } finally {
             $this->clear();
         }
