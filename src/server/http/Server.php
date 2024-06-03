@@ -21,6 +21,9 @@ class Server extends HttpServer
 
     public ?int $port = null;
     
+    /** @var array<int, Coroutine> */
+    protected array $connectionCoroutineMap = [];
+
     /**
      * @var App
      */
@@ -59,10 +62,13 @@ class Server extends HttpServer
     public function start(): void
     {
         $this->listen();
+
+        // Create coroutine and waitAll in outside if you have multiple servers (such as hyperf/server:SwowServer.php)
         while (true) {
             try {
                 $connection = $this->acceptConnection();
                 Coroutine::create(function () use ($connection) {
+                    $this->connectionCoroutineMap[$connection->getId()] = Coroutine::getCurrent();
                     try {
                         while (true) {
                             $request = null;
@@ -80,6 +86,7 @@ class Server extends HttpServer
                     } catch (Throwable $exception) {
                         // $this->container->log?->critical((string) $exception);
                     } finally {
+                        unset($this->connectionCoroutineMap[$connection->getId()]);
                         $connection->close();
                     }
                 });
@@ -96,6 +103,15 @@ class Server extends HttpServer
                 }
             } catch (Throwable $exception) {
                 $this->container->log?->error((string) $exception);
+            }
+        }
+
+        // Close coroutines that are accepting connections when server stop.
+        // Don't worry about the unfinished application request. It's running in a new coroutine.
+        foreach ($this->connectionCoroutineMap as $connectionId => $connectionCoroutine) {
+            if ($connectionCoroutine->isAvailable()) {
+                $connectionCoroutine->kill();
+                unset($this->connectionCoroutineMap[$connectionId]);
             }
         }
     }

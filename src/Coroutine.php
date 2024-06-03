@@ -131,4 +131,12 @@ class Coroutine extends SwowCo
             'coroutine_num' => static::count(),
         ];
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public static function exists(int $id): bool
+    {
+        return parent::get($id) !== null;
+    }
 }
