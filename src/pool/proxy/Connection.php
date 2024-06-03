@@ -239,12 +239,12 @@ class Connection extends Proxy implements ConnectionInterface
         return $this->__call(__FUNCTION__, func_get_args());
     }
 
-    public function getTableFields(string $tableName): array
+    public function getLastInsID(BaseQuery $query, string $sequence = null)
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
 
-    public function getLastInsID(\think\db\BaseQuery $query, string $sequence = null)
+    public function getTableFields(string $tableName): array
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
