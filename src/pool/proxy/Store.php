@@ -2,16 +2,16 @@
 
 namespace think\swow\pool\proxy;
 
-use Psr\SimpleCache\CacheInterface;
+use think\cache\TagSet;
 use think\contract\CacheHandlerInterface;
 use think\swow\pool\Proxy;
 
-class Store extends Proxy implements CacheHandlerInterface, CacheInterface
+class Store extends Proxy implements CacheHandlerInterface
 {
     /**
      * @inheritDoc
      */
-    public function has($name)
+    public function has($name): bool
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
@@ -19,7 +19,7 @@ class Store extends Proxy implements CacheHandlerInterface, CacheInterface
     /**
      * @inheritDoc
      */
-    public function get($name, $default = null)
+    public function get($name, $default = null): mixed
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
@@ -27,7 +27,7 @@ class Store extends Proxy implements CacheHandlerInterface, CacheInterface
     /**
      * @inheritDoc
      */
-    public function set($name, $value, $expire = null)
+    public function set($name, $value, $expire = null): bool
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
@@ -35,7 +35,7 @@ class Store extends Proxy implements CacheHandlerInterface, CacheInterface
     /**
      * @inheritDoc
      */
-    public function inc(string $name, int $step = 1)
+    public function inc($name, $step = 1)
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
@@ -43,7 +43,7 @@ class Store extends Proxy implements CacheHandlerInterface, CacheInterface
     /**
      * @inheritDoc
      */
-    public function dec(string $name, int $step = 1)
+    public function dec($name, $step = 1)
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
@@ -51,7 +51,7 @@ class Store extends Proxy implements CacheHandlerInterface, CacheInterface
     /**
      * @inheritDoc
      */
-    public function delete($name)
+    public function delete($name): bool
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
@@ -59,7 +59,7 @@ class Store extends Proxy implements CacheHandlerInterface, CacheInterface
     /**
      * @inheritDoc
      */
-    public function clear()
+    public function clear(): bool
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
@@ -67,7 +67,7 @@ class Store extends Proxy implements CacheHandlerInterface, CacheInterface
     /**
      * @inheritDoc
      */
-    public function clearTag(array $keys)
+    public function clearTag($keys)
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
@@ -75,7 +75,7 @@ class Store extends Proxy implements CacheHandlerInterface, CacheInterface
     /**
      * @inheritDoc
      */
-    public function getMultiple($keys, $default = null)
+    public function getMultiple($keys, $default = null): iterable
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
@@ -83,7 +83,7 @@ class Store extends Proxy implements CacheHandlerInterface, CacheInterface
     /**
      * @inheritDoc
      */
-    public function setMultiple($values, $ttl = null)
+    public function setMultiple($values, $ttl = null): bool
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
@@ -91,7 +91,7 @@ class Store extends Proxy implements CacheHandlerInterface, CacheInterface
     /**
      * @inheritDoc
      */
-    public function deleteMultiple($keys)
+    public function deleteMultiple($keys): bool
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
@@ -99,7 +99,23 @@ class Store extends Proxy implements CacheHandlerInterface, CacheInterface
     /**
      * @inheritDoc
      */
-    public function tag($name)
+    public function tag($name): TagSet
+    {
+        return $this->__call(__FUNCTION__, func_get_args());
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function pull($name)
+    {
+        return $this->__call(__FUNCTION__, func_get_args());
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function remember($name, $value, $expire = null)
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
