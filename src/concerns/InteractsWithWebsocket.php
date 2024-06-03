@@ -50,12 +50,15 @@ trait InteractsWithWebsocket
      * "onHandShake" listener.
      *
      * @param ServerRequest $req
-     * @param ServerConnection $res
+     * @param ServerConnection $con
      */
     public function onHandShake($req, $con)
     {
-        $this->runInSandbox(function (SwowApp $app, Websocket $websocket, HandlerInterface $handler) use ($req, $con) {
+        $this->runInSandbox(function (SwowApp $app) use ($req, $con) {
             $con = $this->upgradeToWebSocket($con, $req);
+
+            $websocket = $app->make(Websocket::class, [], true);
+            $app->instance(Websocket::class, $websocket);
 
             $websocket->setClient($con);
 
@@ -82,6 +85,8 @@ trait InteractsWithWebsocket
                 $websocket->setSender($id);
                 $websocket->join($id);
 
+                $handler = $app->make(HandlerInterface::class);
+                
                 $this->runWithBarrier(function () use ($req, $app, $handler) {
                     $request = $this->prepareRequest($app, $req);
                     try {

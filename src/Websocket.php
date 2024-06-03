@@ -2,6 +2,7 @@
 
 namespace think\swow;
 
+use RuntimeException;
 use Swow\Psr7\Server\ServerConnection;
 use think\Event;
 use think\swow\websocket\Pusher;
@@ -154,6 +155,9 @@ class Websocket
      */
     public function getSender()
     {
+        if (empty($this->sender)) {
+            throw new RuntimeException('Cannot use websocket as current client before handshake!');
+        }
         return $this->sender;
     }
 }
