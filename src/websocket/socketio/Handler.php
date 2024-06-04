@@ -116,9 +116,11 @@ class Handler implements HandlerInterface
                 }
                 break;
             case EnginePacket::PING:
+                $this->event->trigger('swow.websocket.Ping');
                 $this->push(EnginePacket::pong($enginePacket->data));
                 break;
             case EnginePacket::PONG:
+                $this->event->trigger('swow.websocket.Pong');
                 $this->schedulePing();
                 break;
             default:
