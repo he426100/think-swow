@@ -3,23 +3,16 @@ declare (strict_types = 1);
 
 namespace think\swow;
 
-use think\swow\concerns\InteractsWithPools;
-use think\swow\concerns\InteractsWithServer;
-use think\swow\concerns\WithApplication;
-use think\swow\concerns\WithContainer;
+use think\swow\Manager;
 
-class CommandManager
+class CommandManager extends Manager
 {
-    use InteractsWithServer,
-        InteractsWithPools,
-        WithContainer,
-        WithApplication;
-
     /**
      * Initialize.
      */
     protected function initialize(): void
     {
+        $this->container->bind(Manager::class, CommandManager::class);
         $this->preparePools();
     }
 }
