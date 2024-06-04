@@ -25,12 +25,11 @@ abstract class Swow extends Command
             ->setDescription('Swow Command for ThinkPHP');
     }
 
-    protected function execute(Input $input, Output $output)
+    public function handle(CommandManager $manager)
     {
-        $manager = $this->app->make(CommandManager::class);
-        $manager->addWorker(function () use ($manager, $input, $output) {
-            $manager->runInSandbox(function () use ($input, $output) {
-                $this->runInSwow($input, $output);
+        $manager->addWorker(function () use ($manager) {
+            $manager->runInSandbox(function () {
+                $this->runInSwow($this->input, $this->output);
             });
         }, $this->getName());
 

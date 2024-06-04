@@ -104,8 +104,8 @@ class Redis implements RoomInterface
     /**
      * Delete multiple socket fds from a room.
      *
-     * @param string fd
-     * @param array|string rooms
+     * @param string $fd
+     * @param array|string $rooms
      */
     public function delete($fd, $rooms)
     {
@@ -184,7 +184,7 @@ class Redis implements RoomInterface
     /**
      * Get all sockets by a room key.
      *
-     * @param string room
+     * @param string $room
      *
      * @return array
      */
@@ -196,7 +196,7 @@ class Redis implements RoomInterface
     /**
      * Get all rooms by a fd.
      *
-     * @param string fd
+     * @param string $fd
      *
      * @return array
      */

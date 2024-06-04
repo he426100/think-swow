@@ -119,7 +119,7 @@ trait InteractsWithHttp
      * "onRequest" listener.
      *
      * @param ServerRequest $req
-     * @param ServerConnection $res
+     * @param ServerConnection $con
      */
     public function onRequest($req, $con)
     {

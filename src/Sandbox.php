@@ -126,7 +126,7 @@ class Sandbox
 
     /**
      * Get current snapshot.
-     * @return App|null
+     * @return SwowApp|null
      */
     public function getSnapshot($init = false)
     {

@@ -137,10 +137,8 @@ class Websocket
 
     /**
      * Set sender fd.
-     *
-     * @param string
-     *
-     * @return $this
+     * @param string $fd 
+     * @return $this 
      */
     public function setSender(string $fd)
     {
