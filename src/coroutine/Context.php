@@ -11,7 +11,7 @@ class Context
     /**
      * 获取协程上下文
      * @param ?int $cid
-     * @return Coroutine\Context
+     * @return ArrayObject
      */
     public static function get($cid = null)
     {
@@ -106,9 +106,65 @@ class Context
     /**
      * 获取当前协程ID
      * @return mixed
+     * @deprecated
      */
     public static function getCoroutineId()
     {
         return Coroutine::id();
+    }
+
+    /**
+     * 获取当前协程ID
+     * @return mixed
+     */
+    public static function getId()
+    {
+        return Coroutine::id();
+    }
+
+    /**
+     * 获取父级协程ID
+     * @param null $id
+     * @return mixed
+     */
+    public static function getPid($id = null)
+    {
+        if (self::get($id)->offsetExists('#pid')) {
+            return self::get($id)->offsetGet('#pid');
+        }
+        return Coroutine::pid($id);
+    }
+
+    /**
+     * 绑定父级协程ID
+     * @param $id
+     */
+    public static function attach($id)
+    {
+        self::get()->offsetSet('#pid', $id);
+    }
+
+    /**
+     * 获取根协程ID
+     * @param bool $init
+     * @return mixed
+     */
+    public static function getRootId($init = false)
+    {
+        if ($init) {
+            self::get()->offsetSet('#root', true);
+            return self::getId();
+        } else {
+            $cid = self::getId();
+            while (!self::get($cid)->offsetExists('#root')) {
+                $cid = self::getPid($cid);
+
+                if ($cid < 1) {
+                    break;
+                }
+            }
+
+            return $cid;
+        }
     }
 }
