@@ -17,6 +17,8 @@ namespace {
 namespace think\swow\helper {
 
     use think\swow\response\File;
+    use think\swow\response\Iterator;
+    use Traversable;
 
     function download(string $filename, string $name = '', $disposition = File::DISPOSITION_ATTACHMENT): File
     {
@@ -32,5 +34,10 @@ namespace think\swow\helper {
     function file(string $filename)
     {
         return new File($filename);
+    }
+
+    function iterator(Traversable $iterator)
+    {
+        return new Iterator($iterator);
     }
 }

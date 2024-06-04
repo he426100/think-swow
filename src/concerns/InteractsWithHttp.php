@@ -17,10 +17,12 @@ use think\exception\Handle;
 use think\helper\Arr;
 use think\helper\Str;
 use think\Http;
+use think\swow\Coroutine;
 use think\swow\server\http\Server;
 use think\swow\App as SwowApp;
 use think\swow\Http as SwowHttp;
 use think\swow\response\File as FileResponse;
+use think\swow\response\Iterator as IteratorResponse;
 use think\swow\Cookie as SwowCookie;
 use Throwable;
 use function substr;
@@ -71,7 +73,6 @@ trait InteractsWithHttp
         if ($this->app->config->get('app.with_route', true)) {
             $this->app->invokeMethod([$http, 'loadRoutes'], [], true);
             $route = clone $this->app->route;
-            $this->modifyProperty($route, null);
             unset($this->app->route);
 
             $this->app->resolving(SwowHttp::class, function ($http, App $app) use ($route) {
@@ -82,7 +83,6 @@ trait InteractsWithHttp
         }
 
         $middleware = clone $this->app->middleware;
-        $this->modifyProperty($middleware, null);
         unset($this->app->middleware);
 
         $this->app->resolving(SwowHttp::class, function ($http, App $app) use ($middleware) {
@@ -123,30 +123,44 @@ trait InteractsWithHttp
      */
     public function onRequest($req, $con)
     {
-        $this->runWithBarrier([$this, 'runInSandbox'], function (Http $http, Event $event, SwowApp $app) use ($req, $con) {
-            $app->setInConsole(false);
+        Coroutine::create(function () use ($req, $con) {
+            $this->runInSandbox(function (Http $http, Event $event, SwowApp $app) use ($req, $con) {
+                $app->setInConsole(false);
 
-            $request = $this->prepareRequest($app, $req);
+                $request = $this->prepareRequest($app, $req);
+    
+                try {
+                    $response = $this->handleRequest($http, $request);
+                } catch (Throwable $e) {
+                    $handle = $this->app->make(Handle::class);
+                    $handle->report($e);
+                    $response = $handle->render($request, $e);
+                }
+    
+                $res = new Psr7Response();
+                $this->setCookie($res, $app->cookie);
+                $this->sendResponse($con, $res, $request, $response);
 
-            try {
-                $response = $this->handleRequest($http, $request);
-            } catch (Throwable $e) {
-                $handle = $this->app->make(Handle::class);
-                $handle->report($e);
-                $response = $handle->render($request, $e);
-            }
-
-            $res = new Psr7Response();
-            $this->setCookie($res, $app->cookie);
-            $this->sendResponse($con, $res, $request, $response);
+                $http->end($response);
+            });
         });
     }
 
     protected function handleRequest(Http $http, $request)
     {
+        $level = ob_get_level();
+        ob_start();
+
         $response = $http->run($request);
 
-        $http->end($response);
+        if (ob_get_length() > 0) {
+            $content = $response->getContent();
+            $response->content(ob_get_contents() . $content);
+        }
+
+        while (ob_get_level() > $level) {
+            ob_end_clean();
+        }
 
         return $response;
     }
@@ -213,12 +227,27 @@ trait InteractsWithHttp
     protected function sendResponse(ServerConnection $con, Psr7Response $res, \think\Request $request, \think\Response $response)
     {
         switch (true) {
+            case $response instanceof IteratorResponse:
+                $this->sendIterator($con, $res, $response);
+                break;
             case $response instanceof FileResponse:
                 $this->sendFile($con, $res, $request, $response);
                 break;
             default:
                 $this->sendContent($con, $res, $response);
         }
+    }
+
+    protected function sendIterator(ServerConnection $con, Psr7Response $res, IteratorResponse $response)
+    {
+        $this->setHeader($res, $response->getHeader());
+        $this->setStatus($res, $response->getCode());
+
+        $con->sendHttpHeader($res->getStatusCode(), $res->getReasonPhrase(), $res->getHeaders(), $res->getProtocolVersion());
+        foreach ($response as $content) {
+            $con->sendHttpChunk($content);
+        }
+        $con->sendHttpLastChunk();
     }
 
     protected function sendFile(ServerConnection $con, Psr7Response $res, \think\Request $request, FileResponse $response)
@@ -275,12 +304,9 @@ trait InteractsWithHttp
         $this->setHeader($res, $response->getHeader());
 
         if ($code >= 200 && $code < 300 && $length !== 0) {
+            $con->sendHttpFile($res, $file->getPathname(), $offset, $length);
+        } else {
             $con->sendHttpResponse($res);
-            if (method_exists($con, 'sendFile')) {
-                $con->sendFile($file->getPathname(), $offset, $length);
-            } else {
-                $con->send(file_get_contents($file->getPathname()), $offset, $length);
-            }
         }
     }
 
