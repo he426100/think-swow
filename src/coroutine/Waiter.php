@@ -41,13 +41,9 @@ class Waiter
             }
         });
 
-        try {
-            $result = $channel->pop($timeout);
-        } catch (Throwable $e) {
-            if ($e->getCode() === Errno::ETIMEDOUT) {
-                throw new WaitTimeoutException(sprintf('Channel wait failed, reason: Timed out for %s s', $timeout));
-            }
-            throw $e;
+        $result = $channel->pop($timeout);
+        if ($result === false && $channel->isTimeout()) {
+            throw new WaitTimeoutException(sprintf('Channel wait failed, reason: Timed out for %s s', $timeout));
         }
         if ($result instanceof ExceptionThrower) {
             throw $result->getThrowable();
