@@ -55,6 +55,8 @@ class ConnectionPool implements ConnectionPoolInterface
     /**@var int The timer id of balancer */
     protected $balancerTimerId;
 
+    private Timer $timer;
+
     /**
      * ConnectionPool constructor.
      * @param array $poolConfig The minimum number of active connections, the detail keys:
@@ -79,6 +81,7 @@ class ConnectionPool implements ConnectionPoolInterface
         $this->idleCheckInterval = $poolConfig['idleCheckInterval'] >= static::MIN_CHECK_IDLE_INTERVAL ? $poolConfig['idleCheckInterval'] : static::MIN_CHECK_IDLE_INTERVAL;
         $this->connectionConfig = $connectionConfig;
         $this->connector = $connector;
+        $this->timer = new Timer();
     }
 
     /**
@@ -203,7 +206,7 @@ class ConnectionPool implements ConnectionPoolInterface
             return false;
         }
         $this->closed = true;
-        Timer::clear($this->balancerTimerId);
+        $this->timer->clear($this->balancerTimerId);
         Coroutine::create(function () {
             while (true) {
                 if ($this->pool->isEmpty()) {
@@ -226,7 +229,7 @@ class ConnectionPool implements ConnectionPoolInterface
 
     protected function startBalanceTimer(float $interval)
     {
-        return Timer::tick($interval, function () {
+        return $this->timer->tick($interval, function () {
             $now = time();
             $validConnections = [];
             while (true) {

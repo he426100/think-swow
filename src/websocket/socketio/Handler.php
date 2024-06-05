@@ -32,6 +32,8 @@ class Handler implements HandlerInterface
     protected $pingInterval;
     protected $pingTimeout;
 
+    private Timer $timer;
+
     public function __construct(Event $event, Config $config, Websocket $websocket)
     {
         $this->event        = $event;
@@ -39,6 +41,7 @@ class Handler implements HandlerInterface
         $this->websocket    = $websocket;
         $this->pingInterval = $this->config->get('swow.websocket.ping_interval', 25);
         $this->pingTimeout  = $this->config->get('swow.websocket.ping_timeout', 60);
+        $this->timer = new Timer();
     }
 
     /**
@@ -134,8 +137,8 @@ class Handler implements HandlerInterface
      */
     public function onClose()
     {
-        Timer::clear($this->pingTimeoutTimer);
-        Timer::clear($this->pingIntervalTimer);
+        $this->timer->clear($this->pingTimeoutTimer);
+        $this->timer->clear($this->pingIntervalTimer);
         $this->event->trigger('swow.websocket.Close');
     }
 
@@ -158,16 +161,16 @@ class Handler implements HandlerInterface
 
     protected function resetPingTimeout($timeout)
     {
-        Timer::clear($this->pingTimeoutTimer);
-        $this->pingTimeoutTimer = Timer::after($timeout, function () {
+        $this->timer->clear($this->pingTimeoutTimer);
+        $this->pingTimeoutTimer = $this->timer->after($timeout, function () {
             $this->websocket->close();
         });
     }
 
     protected function schedulePing()
     {
-        Timer::clear($this->pingIntervalTimer);
-        $this->pingIntervalTimer = Timer::after($this->pingInterval, function () {
+        $this->timer->clear($this->pingIntervalTimer);
+        $this->pingIntervalTimer = $this->timer->after($this->pingInterval, function () {
             $this->push(EnginePacket::ping());
             $this->resetPingTimeout($this->pingTimeout);
         });
