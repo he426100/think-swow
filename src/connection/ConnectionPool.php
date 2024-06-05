@@ -203,7 +203,7 @@ class ConnectionPool implements ConnectionPoolInterface
             return false;
         }
         $this->closed = true;
-        Timer::deleteTimer($this->balancerTimerId);
+        Timer::clear($this->balancerTimerId);
         Coroutine::create(function () {
             while (true) {
                 if ($this->pool->isEmpty()) {
@@ -226,7 +226,7 @@ class ConnectionPool implements ConnectionPoolInterface
 
     protected function startBalanceTimer(float $interval)
     {
-        return Timer::repeat(round($interval) * 1000, function () {
+        return Timer::tick($interval, function () {
             $now = time();
             $validConnections = [];
             while (true) {

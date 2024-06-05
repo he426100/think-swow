@@ -2,55 +2,108 @@
 
 namespace think\swow\coroutine;
 
-use function msleep;
+use think\swow\Channel;
 use think\swow\Coroutine;
+use think\exception\Handle;
+use Throwable;
 
 class Timer
 {
-    /**
-     * 延后执行
-     * @param int $delay 
-     * @param callable $func 
-     * @return int 
-     */
-    public static function delay(int $delay, callable $func): int
+    public const STOP = 'stop';
+
+    private array $closures = [];
+
+    private int $id = 0;
+
+    private static int $count = 0;
+
+    private static int $round = 0;
+
+    public function __construct(private ?Handle $handler = null)
     {
-        $coroutine = Coroutine::create(static function () use ($delay, $func): void {
-            msleep($delay);
-            $func();
-        });
-        return $coroutine->getId();
     }
 
-    /**
-     * 定时执行
-     * @param int $interval 
-     * @param callable $func 
-     * @return int 
-     */
-    public static function repeat(int $interval, callable $func): int
+    public function after(float $timeout, callable $closure): int
     {
-        $coroutine = Coroutine::create(static function () use ($interval, $func): void {
-            while (true) {
-                msleep($interval);
-                Coroutine::create($func);
+        $id = ++$this->id;
+        $this->closures[$id] = true;
+        Coroutine::create(function () use ($timeout, $closure, $id) {
+            try {
+                ++Timer::$count;
+                $channel = new Channel();
+                if ($timeout > 0) {
+                    $channel->pop($timeout);
+                }
+                if (isset($this->closures[$id])) {
+                    $closure();
+                }
+            } finally {
+                unset($this->closures[$id]);
+                --Timer::$count;
             }
         });
-        return $coroutine->getId();
+        return $id;
     }
 
-    /**
-     * 删除定时器
-     * @param int $timer_id 
-     * @return bool 
-     */
-    public static function deleteTimer(int $timer_id): bool
+    public function tick(float $timeout, callable $closure): int
     {
-        try {
-            (Coroutine::getAll()[$timer_id])->kill();
-            return true;
-        } catch (\Throwable $e) {
-        }
-        return false;
+        $id = ++$this->id;
+        $this->closures[$id] = true;
+        Coroutine::create(function () use ($timeout, $closure, $id) {
+            try {
+                $round = 0;
+                ++Timer::$count;
+                $channel = new Channel();
+                while (true) {
+                    $channel->pop(max($timeout, 0.000001));
+                    if (! isset($this->closures[$id])) {
+                        break;
+                    }
+
+                    $result = null;
+
+                    try {
+                        $result = $closure();
+                    } catch (Throwable $exception) {
+                        $this->handler?->report($exception);
+                    }
+
+                    if ($result === self::STOP) {
+                        break;
+                    }
+
+                    ++$round;
+                    ++Timer::$round;
+                }
+            } finally {
+                unset($this->closures[$id]);
+                Timer::$round -= $round;
+                --Timer::$count;
+            }
+        });
+        return $id;
+    }
+
+    public function until(callable $closure): int
+    {
+        return $this->after(-1, $closure);
+    }
+
+    public function clear(int $id): void
+    {
+        unset($this->closures[$id]);
+    }
+
+    public function clearAll(): void
+    {
+        $this->closures = [];
+    }
+
+    public static function stats(): array
+    {
+        return [
+            'num' => Timer::$count,
+            'round' => Timer::$round,
+        ];
     }
 }
