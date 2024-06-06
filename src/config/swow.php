@@ -41,6 +41,8 @@ return [
         //自定义连接池
     ],
     'ipc'        => [
+        // swow是单进程，默认是不需要ipc的
+        'enable' => false,
         'type'  => 'redis',
         'redis' => [
             'host'          => '127.0.0.1',
@@ -49,12 +51,14 @@ return [
             'max_wait_time' => 5,
         ],
     ],
-    //每个worker里需要预加载以共用的实例
+    // ipc标识, 可选getmypid、gethostname等（pid不能含有.）
+    'get_pid_func' => 'posix_getpid',
+    // 每个worker里需要预加载以共用的实例
     'concretes'  => [],
-    //重置器
+    // 重置器
     'resetters'  => [],
-    //每次请求前需要清空的实例
+    // 每次请求前需要清空的实例
     'instances'  => [],
-    //每次请求前需要重新执行的服务
+    // 每次请求前需要重新执行的服务
     'services'   => [],
 ];

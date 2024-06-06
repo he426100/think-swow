@@ -79,7 +79,7 @@ trait InteractsWithWebsocket
             });
 
             try {
-                $pid = posix_getpid();
+                $pid = $this->workerId;
                 $id = "{$pid}.{$fd}";
 
                 $websocket->setSender($id);

@@ -20,8 +20,11 @@ trait InteractsWithServer
      */
     protected $startFuncMap = [];
 
+    protected $workerId;
+
     /** @var Ipc */
     protected $ipc;
+    protected $ipcEnable = false;
 
     public function addWorker(callable $func, $name = null): self
     {
@@ -35,6 +38,9 @@ trait InteractsWithServer
      */
     public function start(string $envName): void
     {
+        $func = $this->getConfig('get_pid_func');
+        $this->workerId = $func();
+
         $this->initialize();
         $this->triggerEvent('init');
 
@@ -44,7 +50,9 @@ trait InteractsWithServer
         Coroutine::create(function () use ($envName) {
             $this->clearCache();
             $this->prepareApplication($envName);
-            $this->ipc->listenMessage(posix_getpid());
+            if ($this->ipcEnable) {
+                $this->ipc->listenMessage($this->workerId);
+            }
             $this->triggerEvent('workerStart');
 
             foreach ($this->startFuncMap as $map) {
@@ -57,15 +65,26 @@ trait InteractsWithServer
         waitAll();
     }
 
+    public function getWorkerId()
+    {
+        return $this->workerId;
+    }
+
     public function sendMessage($workerId, $message)
     {
-        $this->ipc->sendMessage($workerId, $message);
+        if ($this->ipcEnable) {
+            $this->ipc->sendMessage($workerId, $message);
+        }
     }
 
     protected function prepareIpc()
     {
-        $this->ipc = $this->container->make(Ipc::class);
-        $this->ipc->prepare();
+        $this->ipcEnable = $this->getConfig('ipc.enable', false);
+        
+        if ($this->ipcEnable) {
+            $this->ipc = $this->container->make(Ipc::class);
+            $this->ipc->prepare();
+        }
     }
 
     public function runWithBarrier(callable $func, ...$params)
