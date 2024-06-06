@@ -1,5 +1,6 @@
 <?php
 
+use Swow\Socket;
 use think\swow\websocket\Handler;
 
 return [
@@ -8,6 +9,7 @@ return [
         'host'       => '0.0.0.0',
         'port'       => 80,
         'options'    => [],
+        'flags'      => Socket::BIND_FLAG_NONE,
     ],
     'websocket'  => [
         'enable'        => false,

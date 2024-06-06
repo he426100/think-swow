@@ -44,6 +44,7 @@ trait InteractsWithHttp
         $host    = $this->getConfig('http.host');
         $port    = $this->getConfig('http.port');
         $options = $this->getConfig('http.options', []);
+        $flags   = $this->getConfig('http.flags', Socket::BIND_FLAG_NONE);
 
         $server = new Server($this->getContainer());
         foreach ($options as $key => $value) {
@@ -52,7 +53,7 @@ trait InteractsWithHttp
                 $server->{$method}($value);
             }
         }
-        $server->bind($host, $port, Socket::BIND_FLAG_REUSEPORT);
+        $server->bind($host, $port, $flags);
 
         $server->handle(function (ServerRequest $request, ServerConnection $connection) {
             if ($this->wsEnable && $this->isWebsocketRequest($request)) {
